@@ -79,7 +79,7 @@ class AsicMapProcessor : public Processor {
   
   std::string deadCellFile;
   bool ROOT;
-  int activeLayers;
+
   std::vector<float> _calibrCoeffHcal;
 
   std::vector<int> _hcalLayers;

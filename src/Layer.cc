@@ -50,7 +50,7 @@ void Layer::Init(Track* aTrack)
 
 void Layer::ComputeLayerProperties()
 {
-  //if(clusters.size()<8) return;
+  if(clusters.size()<5) return;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
