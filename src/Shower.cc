@@ -453,7 +453,7 @@ int Shower::NeutralShower()
       count++;
   }
   if(count<4){
-    streamlog_out( MESSAGE ) << " one neutral particle : " << std::endl;
+    streamlog_out( DEBUG ) << " one neutral particle : " << std::endl;
     return 1;
   }
   else return 0;

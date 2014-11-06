@@ -369,8 +369,8 @@ void ShowerProcessor::doShower()
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     if(std::find(shower->getHits().begin(),shower->getHits().end(), (*it) )!=shower->getHits().end()) continue;
     shower->AddHits(*it);
-    //if( idDecoder(*it)[Idec.c_str()]<=8 || idDecoder(*it)[Idec.c_str()]>=89 || idDecoder(*it)[Jdec.c_str()]<8 || idDecoder(*it)[Jdec.c_str()]>89 )
-    //  shower->getHits().pop_back();
+    if( idDecoder(*it)[Idec.c_str()]<=8 || idDecoder(*it)[Idec.c_str()]>=89 || idDecoder(*it)[Jdec.c_str()]<=8 || idDecoder(*it)[Jdec.c_str()]>=89 )
+      shower->getHits().pop_back();
   }
   theShowers.push_back(shower);
 #endif 
