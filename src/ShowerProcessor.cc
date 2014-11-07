@@ -409,7 +409,7 @@ void ShowerProcessor::doShower()
   for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it)
     std::sort( (*it)->getHits().begin(), (*it)->getHits().end(), ShowerClassFunction::sortShowerHitsByLayer);
   std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
-  if( (*theShowers.begin())->getHits().empty() ){
+  if( (*theShowers.begin())->getHits().size()<5 ){
     for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
       delete *it;
     }

@@ -72,8 +72,8 @@ void DistanceBetweenOneClusterAndOneTrack::Init(Track* trk)
 {
   aPataTrack=trk;
   //Nx,Ny : plans containing the track
-  Nx.setX(-1.); Nx.setY(0.); Nx.setZ(aPataTrack->getTrackParameters()[1]);
-  Ny.setX(0.); Ny.setY(-1.); Ny.setZ(aPataTrack->getTrackParameters()[3]);
+  Nx = ThreeVector(-1., 0., aPataTrack->getTrackParameters()[1]);
+  Ny = ThreeVector(0., -1., aPataTrack->getTrackParameters()[3]);
   //u : track orientation vector
   u=Nx.cross(Ny);
   normU=u.mag();
@@ -110,8 +110,8 @@ void DistanceBetweenOneHitAndOneTrack::Init(Track* trk)
 {
   aPataTrack=trk;
   //Nx,Ny : plans containing the track
-  Nx.setX(-1.); Nx.setY(0.); Nx.setZ(aPataTrack->getTrackParameters()[1]);
-  Ny.setX(0.); Ny.setY(-1.); Ny.setZ(aPataTrack->getTrackParameters()[3]);
+  Nx = ThreeVector(-1., 0., aPataTrack->getTrackParameters()[1]);
+  Ny = ThreeVector(0., -1., aPataTrack->getTrackParameters()[3]);
   //u : track orientation vector
   u=Nx.cross(Ny);
   normU=u.mag();
