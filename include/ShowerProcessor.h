@@ -179,6 +179,7 @@ class ShowerProcessor : public Processor {
   int clusterRadialProfile[96];
   int radialProfileBis[96];
   int clusterMips;
+  int clusterIsolated;
   int nshower;
   std::vector<double> TrackLength;
   std::vector<double> eff_layer;
@@ -192,6 +193,9 @@ class ShowerProcessor : public Processor {
   int nclusterlayer[48];
   float transverseRatio;
   float _primaryTrackCosTheta;
+  ThreeVector _incidentParticleMomentum; //if simu
+  float _incidentParticleCosTheta; //if simu
+  float _reconstructedCosTheta;
 } ;
 
 #endif

@@ -198,11 +198,14 @@ void ShowerProcessor::init()
   tree->Branch("TrackClusterNumber","std::vector<int>",&trackNclusters);
   tree->Branch("ClusterMip",&clusterMips);
   tree->Branch("ClusterEM",&clusterEM);
+  tree->Branch("ClusterIsolated",&clusterIsolated);
   tree->Branch("Edge",&edge);
   tree->Branch("Neutral",&neutral);
   tree->Branch("Single",&singlePart);
   tree->Branch("TransverseRatio",&transverseRatio);
   tree->Branch("PrimaryTrackCosTheta",&_primaryTrackCosTheta);
+  tree->Branch("IncidentParticleCosTheta",&_incidentParticleCosTheta);
+  tree->Branch("ReconstructedCosTheta",&_reconstructedCosTheta);
 
   memset(longiProfile,0,48*sizeof(int));
   memset(longiProfile_bis,0,48*sizeof(int));
@@ -448,8 +451,16 @@ void ShowerProcessor::ShowerAnalysis()
   nhough3=0;
   Shower* shower=(*theShowers.begin());
   shower->FindClustersInLayer();
+  clusterIsolated=0;
+  for(std::vector<Cluster*>::iterator clit=shower->getClusters().begin(); clit!=shower->getClusters().end(); ++clit){
+    (*clit)->IsolatedCluster(shower->getClusters());
+    if( (*clit)->isIsolated() ){
+      clusterIsolated++;
+      if(calohit.size()>100) streamlog_out( DEBUG ) << "found an isolated cluster at : " << (*clit)->getClusterPosition()  << "\t" 
+						    << "with " << (*clit)->getHits().size() << " hits " << std::endl;
+    }
+  }
   shower->FindShowerBarycenter();
-  begin=shower->FirstIntLayer();
   for(int i=0;i<4;i++){
     //find nan problem
     if(shower->getShowerBarycenter()[i]!=shower->getShowerBarycenter()[i]) {begin=-5;return;}
@@ -491,10 +502,10 @@ void ShowerProcessor::ShowerAnalysis()
 	ThreeVector py(0,-1,param[3]);
 	ThreeVector pz(0,0,1);
 	_primaryTrackCosTheta=(px.cross(py)).cosTheta(pz);
-	streamlog_out( MESSAGE ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
-				 << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
-				 << ", CHI2="  << (*jt)->getChi2() << std::endl;
-	streamlog_out( MESSAGE ) << "primary track cosTheta = " << _primaryTrackCosTheta << std::endl;
+	streamlog_out( DEBUG ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
+			       << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
+			       << ", CHI2="  << (*jt)->getChi2() << std::endl;
+	streamlog_out( DEBUG ) << "primary track cosTheta = " << _primaryTrackCosTheta << std::endl;
       }
 #ifdef SHOW_TRACKS
       streamlog_out( MESSAGE ) << ":Track between:\t" << aTrackCaracteristics->ReturnTrackFirstPoint()[2] << " ==> " << aTrackCaracteristics->ReturnTrackLastPoint()[2]
@@ -502,11 +513,13 @@ void ShowerProcessor::ShowerAnalysis()
 #endif
       delete aTrackCaracteristics;
     }
-    if(begin<0)
-      begin=shower->TryAgainToFindShowerStartingLayer();
+    //if(begin<0)
+    //  begin=shower->TryAgainToFindShowerStartingLayer();
     delete hough;
-    density=shower->Density();
+    //density=shower->Density();
   }
+  begin=shower->FirstIntLayer();
+  //streamlog_out( MESSAGE ) << "begin = " << begin << std::endl;
   clusterMips=isolClusVec.size();
   isolClusVec.clear();
   nclusters=shower->getClusters().size();
@@ -543,6 +556,11 @@ void ShowerProcessor::ShowerAnalysis()
   hole=shower->holeFinder(begin);
   for(int i=0;i<4;i++)
     cog[i]=shower->getShowerBarycenter()[i];
+  
+  ThreeVector px(-1,0,cog[1]);
+  ThreeVector py(0,-1,cog[3]);
+  ThreeVector _reconstructedMomentum=px.cross(py);
+  _reconstructedCosTheta= (px.cross(py)).cosTheta();
   radius=shower->Radius(begin);
   firstLayerRatio=shower->FirstLayerClusterRatio();
   centralRatio=shower->CentralHitRatio();
@@ -623,11 +641,17 @@ void ShowerProcessor::processEvent( LCEvent * evt )
 	calohit.push_back(hit);
       }
       //      makeHitMap();
-      doShower();
       if(DATA) {
         findEventTime(evt,col);
         findSpillEventTime(evt,col);
       }
+      else{
+	std::vector<float> pMOm;
+	evt->parameters().getFloatVals(std::string("ParticleMomentum"),pMOm);
+	_incidentParticleMomentum=ThreeVector(pMOm.at(0),pMOm.at(1),pMOm.at(2));
+	_incidentParticleCosTheta=_incidentParticleMomentum.cosTheta();
+      }
+      doShower();
       fillTree();
     }
     catch(DataNotAvailableException &e){ 

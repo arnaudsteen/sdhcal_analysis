@@ -140,13 +140,13 @@ void Cluster::IsolatedCluster(std::vector<Cluster*>& clVec)
   int compt=0;
   for(std::vector<Cluster*>::iterator jt=clVec.begin(); jt!=clVec.end(); ++jt){
     if( this==(*jt) ) continue;
-    if( fabs(this->getClusterPosition().z()-(*jt)->getClusterPosition().z())<4 &&
-	fabs(this->getClusterPosition().y()-(*jt)->getClusterPosition().y())<10 &&
-	fabs(this->getClusterPosition().x()-(*jt)->getClusterPosition().x())<10 ){
+    if( fabs(this->getClusterPosition().z()-(*jt)->getClusterPosition().z())<3 &&
+	fabs(this->getClusterPosition().y()-(*jt)->getClusterPosition().y())<5 &&
+	fabs(this->getClusterPosition().x()-(*jt)->getClusterPosition().x())<5 ){
       compt++;
     }
   }
-  if(compt>=2) setIsolation(false);
+  if(compt>=1) setIsolation(false);
   else if( (this->getClusterPosition().z()==0||this->getClusterPosition().z()==47) && compt>=1 )
     setIsolation(false);
 }
