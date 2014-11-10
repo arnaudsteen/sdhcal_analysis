@@ -422,7 +422,7 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
   delete distMinus;
   delete trackPlus;
   delete trackMinus;
-  if(show){
+  if(1){
     for(unsigned int i=0; i<96; i++)
       if(radialProfile[i]>0||radialProfileBis[i]>0)
 	streamlog_out( MESSAGE ) << ":bin:\t" << i 

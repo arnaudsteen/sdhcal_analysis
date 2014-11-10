@@ -78,7 +78,7 @@ void DistanceBetweenOneClusterAndOneTrack::Init(Track* trk)
   u=Nx.cross(Ny);
   normU=u.mag();
   //B : a track point 
-  B.setX(aPataTrack->getTrackParameters()[0]); B.setY(aPataTrack->getTrackParameters()[2]); B.setZ(0.);
+  B = ThreeVector(aPataTrack->getTrackParameters()[0],aPataTrack->getTrackParameters()[2],0.);
 }
 
 float DistanceBetweenOneClusterAndOneTrack::CalculateDistance(Cluster* cluster)
@@ -116,13 +116,13 @@ void DistanceBetweenOneHitAndOneTrack::Init(Track* trk)
   u=Nx.cross(Ny);
   normU=u.mag();
   //B : a track point 
-  B.setX(aPataTrack->getTrackParameters()[0]); B.setY(aPataTrack->getTrackParameters()[2]); B.setZ(0.);
+  B = ThreeVector(aPataTrack->getTrackParameters()[0],aPataTrack->getTrackParameters()[2],0.);
 }
 
 float DistanceBetweenOneHitAndOneTrack::CalculateDistance(EVENT::CalorimeterHit* hit)
 {
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  ThreeVector H(idDecoder(hit)["I"],idDecoder(hit)["J"],idDecoder(hit)["K-1"]);
+  ThreeVector H(idDecoder(hit)["I"],idDecoder(hit)["J"],idDecoder(hit)["K-1"]*2.6131);
   ThreeVector BH(B.x()-H.x(),B.y()-H.y(),B.z()-H.z());
   if(normU>0)
     return (BH.cross(u)).mag()/normU;
