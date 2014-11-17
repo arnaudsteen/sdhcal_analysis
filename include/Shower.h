@@ -53,7 +53,7 @@ class Shower
   float TransverseRatio();
   int TryAgainToFindShowerStartingLayer();
   float CorrectedNumberOfHits();
-  void LayerProperties();
+  void LayerProperties(bool DATA);
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
   inline void AddHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits.insert(hits.end(),hitVec.begin(),hitVec.end());}

@@ -18,6 +18,7 @@ Layer::Layer(int ID)
   meanMultiplicity=0;
   chi2=0;
   layerGap=26.131; //mm default
+  layerZPosition=layID*layerGap;
 }
 
 Layer::Layer(int ID,float layGap)
@@ -30,6 +31,7 @@ Layer::Layer(int ID,float layGap)
   meanMultiplicity=0;
   chi2=0;
   layerGap=layGap;
+  layerZPosition=layID*layerGap;
 }
 
 Layer::~Layer()
@@ -76,13 +78,11 @@ void Layer::ComputeLayerProperties()
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
     chi2=aTrack->getChi2();
-    float xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
-    float yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
-    //std::cout << aTrack->getTrackParameters()[0] << " " << aTrack->getTrackParameters()[2] << std::endl;
+    xExpected=aTrack->getTrackParameters()[1]*layerZPosition+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layerZPosition+aTrack->getTrackParameters()[2];
     ThreeVector px(-1,0,aTrack->getTrackParameters()[1]);
     ThreeVector py(0,-1,aTrack->getTrackParameters()[3]);
-    //std::cout << "new costheta = " << px.cross(py).cosTheta() << std::endl;
-    if(xExpected>1000||xExpected<0||yExpected>1000||yExpected<0){
+    if(xExpected>1008||xExpected<0||yExpected>1008||yExpected<0){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
       streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " << std::endl;
@@ -136,19 +136,20 @@ void Layer::ComputeLayerProperties()
     }
     else{
       this->setLayerTag(fUnefficientLayer);
-      streamlog_out( MESSAGE ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
-			       << sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
-					((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
-			       << "\t chi2 = " << chi2 
-			       << "\t clusterInLayer.size() = " << clustersInLayer.size() 
-			       << std::endl;
-      for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-	for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
-	  std::cout << sqrt( pow( (*jt)->getPosition()[0]-(xExpected),2 ) + 
-			     pow( (*jt)->getPosition()[1]-(yExpected),2 ) ) 
-		    << "\t while new dist = " << new_dist << std::endl;
-	}
-      }      
+      //  streamlog_out( MESSAGE ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
+      //			     << sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
+      //				      ((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
+      //			     << "\t chi2 = " << chi2 
+      //			     << "\t clusterInLayer.size() = " << clustersInLayer.size() 
+      //			     << "\t xExpected = " << xExpected << "\t yExpected = " << yExpected
+      //			     << std::endl;
+      //  for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
+      //	for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
+      //	  streamlog_out( MESSAGE ) << "(*it)->getPosition()[0] = " << (*jt)->getPosition()[0] << "\t" 
+      //				 << "(*it)->getPosition()[1] = " << (*jt)->getPosition()[1] << "\t" 
+      //				 << "(*it)->getPosition()[2] = " << (*jt)->getPosition()[2] << std::endl;
+      //	}
+      //  }    
     }
   }
   delete aTrackingAlgo;
@@ -223,8 +224,8 @@ void LayerInShower::ComputeShowerLayerProperties()
     std::cout << "LayerInShower::ComputeShowerLayerProperties() 3" << std::endl;
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    float xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
-    float yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
+    xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
     if(xExpected>96||xExpected<0||yExpected>96||yExpected<0){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
@@ -284,7 +285,7 @@ void LayerInShower::ComputeShowerLayerProperties()
   delete aTrackingAlgo;
 }
 
-bool LayerInShower::CheckIfTrueUnfficientLayer(float xExpected,float yExpected)
+bool LayerInShower::CheckIfTrueUnfficientLayer()
 {
   if(clustersInShower.empty())
     return true;  
@@ -332,8 +333,8 @@ void LayerForThrScan::ComputeLayerProperties()
       }
 
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    float xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
-    float yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
+    xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
     if(xExpected>94||xExpected<2||yExpected>94||yExpected<2){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;

@@ -42,8 +42,12 @@ class Layer
   inline void setMultiplicityMap(std::map<int,double> &mulmap){_multiMap=mulmap;}
   inline void setMeanMultiplicity(float val){meanMultiplicity=val;}
   inline float getChi2(){return chi2;}
+  inline void setLayerZPosition(float pos){layerZPosition=pos;}
+  inline float getxExpected(){return xExpected;}
+  inline float getyExpected(){return yExpected;}
  protected:
   int layID;
+  float layerZPosition;
   float effDistanceCut;
   float meanMultiplicity;
   std::vector<Cluster*> clusters;
@@ -54,6 +58,8 @@ class Layer
   float correctedMultiplicity;
   float chi2;
   float layerGap;
+  float xExpected;
+  float yExpected;
   LayerTag layerTag;
 };
 
@@ -65,7 +71,7 @@ class LayerInShower : public Layer
   void Init(std::vector<Cluster*> &clVec,std::vector<Cluster*> &clVecShower);
   void Init(Track* aTrack,std::vector<Cluster*> &clVecShower);
   void ComputeShowerLayerProperties();
-  bool CheckIfTrueUnfficientLayer(float x,float y);//x,y expected track impact in layer
+  bool CheckIfTrueUnfficientLayer();
  private: 
   std::vector<Cluster*> clustersInShower;
 };

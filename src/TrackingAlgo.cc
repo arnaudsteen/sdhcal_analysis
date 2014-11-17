@@ -92,9 +92,7 @@ void TrackingAlgo::DoTracking()
   std::vector<ThreeVector> weights;
   std::vector<int> clSize;
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
-    ThreeVector temp( (*it)->getClusterPosition().x(),
-		      (*it)->getClusterPosition().y(),
-		      (*it)->getClusterPosition().z() );
+    ThreeVector temp( (*it)->getClusterPosition() );
     pos.push_back(temp);
     clSize.push_back( (*it)->getHits().size() );
   }
@@ -122,12 +120,12 @@ void TrackingAlgo::DoTracking()
   //  return;
   //}
   if( findInteraction(clusters,fit->GetFitParameters()) ){
-    streamlog_out( MESSAGE ) << "findInteraction(clusters,fit->GetFitParameters()) is true" << std::endl;
+    streamlog_out( DEBUG ) << "findInteraction(clusters,fit->GetFitParameters()) is true" << std::endl;
     trackingSuccess=false; 
     delete fit;
     return;
   }
-  streamlog_out( DEBUG ) << "track equation:\t" 
+  streamlog_out( DEBUG ) << "track equation:(linear fit)\t" 
 			 << "(zx)\t::" << fit->GetFitParameters()[1] << "*z+" << fit->GetFitParameters()[0] << "::\t" 
 			 << "(zy)\t::" << fit->GetFitParameters()[3] << "*z+" << fit->GetFitParameters()[2] << "::\t" 
 			 << std::endl;

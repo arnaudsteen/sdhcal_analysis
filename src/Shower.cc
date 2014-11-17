@@ -704,7 +704,7 @@ float Shower::TransverseRatio()
   return transverseRatio;
 }
 
-void Shower::LayerProperties()
+void Shower::LayerProperties(bool DATA=true)
 {
   std::cout << "void Shower::LayerProperties() is starting" << std::endl;
   float eff[48];memset(eff,0,48*sizeof(float));
@@ -727,115 +727,14 @@ void Shower::LayerProperties()
 			      << "trackEnd  = " << trackEnd << std::endl;
     for(int K=trackBegin; K<=trackEnd; K++){
       LayerInShower* aLayer=new LayerInShower(K);
+      if(!DATA)
+	aLayer->setLayerZPosition( (K*26.131-625.213) );
       std::cout << "LayerInShower* aLayer=new LayerInShower(K);" << std::endl;
       aLayer->Init( (*track_et_it), clusterShower );
       std::cout << "aLayer->Init( (*track_et_it), clusterShower );" << std::endl;
-      //if(DATA){
-      //	aLayer->setMultiplicityMap(_mulMap);
-      //	aLayer->setMeanMultiplicity(meanMultiplicity);
-      //}
       std::cout << "aLayer= :" << aLayer << std::endl;
       aLayer->ComputeShowerLayerProperties();
-      //if( aLayer->getLayerTag()!=fUndefinedLayer )
-//	compt[K]++;
-//if( aLayer->getLayerTag()==fEfficientLayer ){
-//	//	chi[K]=aLayer->getChi2();
-//	eff[K]+=aLayer->getEfficiency()[0];
-//	mul[K]+=aLayer->getMultiplicity();
-//}
       delete aLayer;
-//if(compt[K]>0)
-//	streamlog_out( MESSAGE  ) << "track begin = " << trackBegin << "\t"
-//				  << "trackEnd  = " << trackEnd << "\t"
-//				  << "layer = " << K << "\t" 
-//				  << "efficiency = " << eff[K] << "\t" 
-//				  << "multiplicity = " << mul[K] << std::endl;
     }
   }
 }
-
-
-
-//float ShowerProcessor::ClusterTrackDistance(Track *track, Cluster* cluster)
-//{
-//  // track x=a+bz , cluster (Z,X,Y) <=> bz-x+a=0 => d=|bZ-X+a|/sqrt(b**2+1)
-//  float *param=track->getTrackParameters();
-//  std::vector<float> clPos=cluster->getClusterPosition();
-//  float dx=abs(param[1]*clPos[2]-clPos[0]+param[0])/sqrt(pow(param[1],2)+1);
-//  float dy=abs(param[3]*clPos[2]-clPos[1]+param[2])/sqrt(pow(param[3],2)+1);
-//  return sqrt(pow(dx,2)+pow(dy,2));
-//}
-//
-//void ShowerProcessor::LayerProperties(std::vector<Track*> &trackVec,std::vector<Cluster*> &clVec){
-//
-//  int comptEff[48];
-//  int comptMul[48];
-//  float eff[48];
-//  float mul[48];
-//
-//  for(unsigned int i=0; i<48; i++) {
-//    comptEff[i]=0;
-//    comptMul[i]=0;
-//    eff[i]=0;
-//    mul[i]=0;
-//  }
-//
-//  for(std::vector<Track*>::iterator it=trackVec.begin(); it!=trackVec.end(); ++it){
-//    if( (*it)->getClusters().size()<10 ) continue;
-//    streamlog_out(DEBUG) << "(ZX) Track equation : " << (*it)->getTrackParameters()[1] << "*z + " << (*it)->getTrackParameters()[0] 
-//			 << "(ZY) Track equation : " << (*it)->getTrackParameters()[3] << "*z + " << (*it)->getTrackParameters()[2] 
-//			 << ", Begin="<< (*it)->begin << ", End=" << (*it)->end <<std::endl;
-//    for(int i=(*it)->begin; i<=(*it)->end; i++){
-//      comptEff[i]++;
-//      std::vector<Cluster*> clLay;
-//      bool append = false;
-//      for(std::vector<Cluster*>::iterator jt=clVec.begin(); jt!=clVec.end(); ++jt){
-//	if( int((*jt)->getClusterPosition().z())==i ){
-//	  clLay.push_back(*jt);
-//	  append=true;
-//	}
-//      }
-//      if(append==false) {
-//	streamlog_out(DEBUG) << "UNEFFICIENT LAYER : " << i << " ==> NO cluster found " << std::endl;
-//	continue;
-//      }
-//      float min=200;
-//      Cluster* clus=NULL;
-//      for(std::vector<Cluster*>::iterator jt=clLay.begin(); jt!=clLay.end(); ++jt){
-//	float dist=ClusterTrackDistance( (*it), (*jt) );
-//	if(dist<min) {min=dist; clus=(*jt);}
-//      }
-//      clLay.clear();
-//      if(min<2&&clus->getHits().size()>10) { comptEff[i]=comptEff[i]-1; continue;}
-//      if(min<2&&clus->getHits().size()<=10){
-//	eff[i]++;
-//	mul[i]+=clus->getHits().size();
-//	comptMul[i]++;
-//	streamlog_out(DEBUG) << min << " " << clus->getHits().size() << " " 
-//			     << clus->getClusterPosition().z() << " " 
-//			     << clus->getClusterPosition().x() << " " 
-//			     << clus->getClusterPosition().y() << std::endl;
-//	continue;
-//      }
-//      else{
-//	streamlog_out(DEBUG) << "UNEFFICIENT LAYER : " << i  
-//			     << " best cluster found at " << min 
-//			     << "; cluster size = " << clus->getHits().size() << std::endl;
-//      }
-//    }
-//  }
-//
-//  eff_layer.reserve(48);
-//  mul_layer.reserve(48);
-//  
-//  for(int i=0; i<48; i++){
-//    eff_layer.push_back(0);
-//    mul_layer.push_back(0);
-//    if(comptEff[i]==0) eff[i]=-1;
-//    if(comptEff[i]>0) eff[i]=eff[i]/comptEff[i];
-//    if(comptMul[i]>0) mul[i]=mul[i]/comptMul[i];
-//    eff_layer.at(i)=eff[i];
-//    mul_layer.at(i)=mul[i];
-//  }
-//}
-//

@@ -18,6 +18,7 @@
 #include "Cluster.h"
 #include "ThreeVector.hh"
 #include "Asic.h"
+#include "Layer.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -58,11 +59,11 @@ class AsicMapProcessor : public Processor {
   virtual void ComputePCA();
   virtual void fillHisto();
   virtual int Nlayer();
-  virtual void LayerProperties(const std::vector<Cluster*> &clVec); 
-  bool TrackSelection(const std::vector<Cluster*> &clVec);
+  virtual void LayerProperties(std::vector<Cluster*> &clVec); 
+  bool TrackSelection(std::vector<Cluster*> &clVec);
   virtual void doTrackStudy();
-  virtual int findAsicKey(const int layer, const float* par);
-  virtual bool findInteraction(const std::vector<Cluster*> &clusters,float* &pars);
+  virtual int findAsicKey(int layer, float x, float y);
+  virtual bool findInteraction(std::vector<Cluster*> &clusters,float* &pars);
  protected:
 
   int _nRun ;

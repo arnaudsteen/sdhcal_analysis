@@ -236,8 +236,8 @@ void TrackProc::doTrackStudy()
     (*it)->IsolatedCluster(clusters);
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->isIsolated() ){
-      streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << IDdecoder(*(*it)->getHits().begin())["K-1"] << "\t" 
-			     << "is isolated and rejected" << std::endl;
+      streamlog_out( MESSAGE ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << IDdecoder(*(*it)->getHits().begin())["K-1"] << "\t" 
+			       << "is isolated and rejected" << std::endl;
       delete *it; 
       clusters.erase(it); 
       it--;
@@ -378,33 +378,26 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int trackBegin= IDdecoder(*(*clVec.begin())->getHits().begin())["K-1"];
   int trackEnd=IDdecoder(*(*(clVec.end()-1))->getHits().begin())["K-1"];
-  //if(trackBegin==-1)trackBegin=0;
-  //if(trackEnd==48)trackEnd=47;
   _trackend=trackEnd;
   if(trackBegin==1) trackBegin=0;
   if(trackEnd==46) trackEnd=47;
   for(int K=trackBegin; K<=trackEnd; K++){
     Layer* aLayer=new Layer(K);
     aLayer->Init(clVec);
-      //if(DATA){
-    //  aLayer->setMultiplicityMap(_mulMap);
-    //  aLayer->setMeanMultiplicity(meanMultiplicity);
-    //}
+    if(!DATA)
+      aLayer->setLayerZPosition( (K*26.131-625.213) );
     aLayer->ComputeLayerProperties();
-      chi2_[K]=aLayer->getChi2();
+    chi2_[K]=aLayer->getChi2();
     if( aLayer->getLayerTag()==fUnefficientLayer ){
-      //      chi2_[K]=aLayer->getChi2();
       eff1[K]=0;
       eff2[K]=0;
       eff3[K]=0;
     }
     if( aLayer->getLayerTag()==fEfficientLayer ){
-      //chi2_[K]=aLayer->getChi2();
       eff1[K]=aLayer->getEfficiency()[0];
       eff2[K]=aLayer->getEfficiency()[1];
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
-      //if(DATA) multiCorrected[K]=aLayer->getCorrectedMultiplicity();
     }
     delete aLayer;
     streamlog_out( DEBUG ) << "evt number = " << _nEvt << "\t layer = " << K 
