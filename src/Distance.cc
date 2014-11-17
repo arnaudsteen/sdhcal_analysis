@@ -1,5 +1,4 @@
 #include "Distance.h"
-#include <UTIL/CellIDDecoder.h>
 #include <cmath>
 
 ThreeVector Distance::VectorProduct(ThreeVector vec1, ThreeVector vec2)
@@ -28,10 +27,9 @@ void DistanceBetweenTwoHits::Init(EVENT::CalorimeterHit* it1,EVENT::CalorimeterH
 
 float DistanceBetweenTwoHits::CalculateDistance()
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  ThreeVector AB(idDecoder(hit1)["I"]-idDecoder(hit2)["I"],
-		 idDecoder(hit1)["J"]-idDecoder(hit2)["J"],
-		 idDecoder(hit1)["K-1"]-idDecoder(hit2)["K-1"]);
+  ThreeVector AB(hit1->getPosition()[0]-hit2->getPosition()[0],
+		 hit1->getPosition()[1]-hit2->getPosition()[1],
+		 hit1->getPosition()[2]-hit2->getPosition()[2]);
   return AB.mag();
 }
 
@@ -48,10 +46,9 @@ void DistanceBetweenOneHitAndOneCluster::Init(EVENT::CalorimeterHit* it,Cluster*
 
 float DistanceBetweenOneHitAndOneCluster::CalculateDistance()
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  ThreeVector AB(idDecoder(hit)["I"]-cluster->getClusterPosition().x(),
-		 idDecoder(hit)["J"]-cluster->getClusterPosition().y(),
-		 idDecoder(hit)["K-1"]-cluster->getClusterPosition().z());
+  ThreeVector AB(hit->getPosition()[0]-cluster->getClusterPosition().x(),
+		 hit->getPosition()[1]-cluster->getClusterPosition().y(),
+		 hit->getPosition()[2]-cluster->getClusterPosition().z());
   return AB.mag();
 }
 
@@ -121,8 +118,7 @@ void DistanceBetweenOneHitAndOneTrack::Init(Track* trk)
 
 float DistanceBetweenOneHitAndOneTrack::CalculateDistance(EVENT::CalorimeterHit* hit)
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  ThreeVector H(idDecoder(hit)["I"],idDecoder(hit)["J"],idDecoder(hit)["K-1"]*2.6131);
+  ThreeVector H(hit->getPosition()[0],hit->getPosition()[1],hit->getPosition()[2]);
   ThreeVector BH(B.x()-H.x(),B.y()-H.y(),B.z()-H.z());
   if(normU>0)
     return (BH.cross(u)).mag()/normU;

@@ -3,7 +3,6 @@
 
 #include <lcio.h>
 #include <EVENT/CalorimeterHit.h>
-#include <UTIL/CellIDDecoder.h>
 #include <iostream>
 #include <vector>
 #include <math.h>

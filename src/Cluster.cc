@@ -42,9 +42,8 @@ void Cluster::buildClusterPosition()
 {
   size_t size=this->getHits().size();
   ThreeVector position(0,0,0);
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(HitDecoder.c_str());
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    ThreeVector hitPos(idDecoder(*it)["I"],idDecoder(*it)["J"],idDecoder(*it)[KDecoder.c_str()]);
+    ThreeVector hitPos( (*it)->getPosition()[0],(*it)->getPosition()[1],(*it)->getPosition()[2] );
     position+=hitPos;
   }
   position/=size;
@@ -116,33 +115,15 @@ void Cluster::BuildCluster(std::vector<EVENT::CalorimeterHit*> &temp,
   }
 }
 
-bool Cluster::IsATrueCluster(std::vector<Cluster*> &clVec)
-{
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(HitDecoder.c_str());
-  for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    if( (*it)->getClusterPosition().z()!=this->getClusterPosition().z() ) continue;
-    for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
-      for(std::vector<EVENT::CalorimeterHit*>::iterator kt=this->getHits().begin(); kt!=this->getHits().end(); ++kt){
-	if( abs(idDecoder(*kt)["I"]-idDecoder(*jt)["I"])<=1 &&
-	    abs(idDecoder(*kt)["J"]-idDecoder(*jt)["J"])<=1 ){
-	  (*it)->getHits().insert((*it)->getHits().end(), this->getHits().begin(), this->getHits().end());
-	  (*it)->buildClusterPosition();
-	  return false;
-	}
-      }
-    }
-  }
-  return true;
-}
-
 void Cluster::IsolatedCluster(std::vector<Cluster*>& clVec)
 {
+  //UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(HitDecoder.c_str());
   int compt=0;
   for(std::vector<Cluster*>::iterator jt=clVec.begin(); jt!=clVec.end(); ++jt){
     if( this==(*jt) ) continue;
-    if( fabs(this->getClusterPosition().z()-(*jt)->getClusterPosition().z())<3 &&
-	fabs(this->getClusterPosition().y()-(*jt)->getClusterPosition().y())<5 &&
-	fabs(this->getClusterPosition().x()-(*jt)->getClusterPosition().x())<5 ){
+    if( fabs(this->getClusterPosition().z()-(*jt)->getClusterPosition().z())<100 &&
+	fabs(this->getClusterPosition().y()-(*jt)->getClusterPosition().y())<200 &&
+	fabs(this->getClusterPosition().x()-(*jt)->getClusterPosition().x())<200 ){
       compt++;
     }
   }
@@ -184,9 +165,8 @@ void Analog_Cluster::BuildCluster(std::vector<EVENT::CalorimeterHit*> &temp,
 void Analog_Cluster::buildClusterPosition()
 {
   ThreeVector position(0,0,0);
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    ThreeVector hitPos(idDecoder(*it)["I"],idDecoder(*it)["J"],idDecoder(*it)["K-1"]);
+    ThreeVector hitPos( (*it)->getPosition()[0],(*it)->getPosition()[1],(*it)->getPosition()[2] );
     position+=hitPos;
   }
   position/=this->getHits().size();

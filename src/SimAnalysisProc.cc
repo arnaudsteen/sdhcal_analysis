@@ -120,13 +120,12 @@ void SimAnalysisProc::ComputePCA()
   Row rowx;
   Row rowy;
   Row rowz;
-  UTIL::CellIDDecoder<EVENT::SimCalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   for(std::vector<EVENT::SimCalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     //int numberOfSteps=(*it)->getNMCContributions();
     //for(int i=0; i<numberOfSteps; i++){
-    rowx.push_back(idDecoder(*it)["I"]);
-    rowy.push_back(idDecoder(*it)["J"]);
-    rowz.push_back(idDecoder(*it)["K-1"]);
+    rowx.push_back( (*it)->getPosition()[0] );
+    rowy.push_back( (*it)->getPosition()[1] );
+    rowz.push_back( (*it)->getPosition()[2] );
     //}
   }
   pca->AddRow(rowx);
@@ -167,12 +166,11 @@ void SimAnalysisProc::LongitudinalProfile()
 
 void SimAnalysisProc::FindShowerBarycenter()
 {
-  UTIL::CellIDDecoder<EVENT::SimCalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   std::vector<ThreeVector> positions;
   std::vector<int> clSize;
   for(std::vector<EVENT::SimCalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     for(int i=0; i<(*it)->getNMCContributions(); i++){
-      ThreeVector t3pos( idDecoder(*it)["I"],idDecoder(*it)["J"],idDecoder(*it)["K-1"] );
+      ThreeVector t3pos( (*it)->getStepPosition(i)[0], (*it)->getStepPosition(i)[1], (*it)->getStepPosition(i)[2] );
       positions.push_back(t3pos);
       clSize.push_back(1);
     }
@@ -195,12 +193,11 @@ void SimAnalysisProc::RadialProfile(bool show)
   //  float count=0;
   //  if(radialProfile[i]>0) streamlog_out(MESSAGE)<<"initialisation proble"<<std::endl;
   //memset(energyRadialProfile,0,96*sizeof(float));
-  UTIL::CellIDDecoder<EVENT::SimCalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::SimCalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    int bin=int( sqrt( (getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*it)["K-1"]-idDecoder(*it)["I"])*
-		       (getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*it)["K-1"]-idDecoder(*it)["I"]) +
-		       (getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*it)["K-1"]-idDecoder(*it)["J"])*
-		       (getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*it)["K-1"]-idDecoder(*it)["J"]) ) );
+    int bin=int( sqrt( (getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])*
+		       (getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0]) +
+		       (getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])*
+		       (getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1]) ) );
     if(bin<96){
       radialProfile[bin]++;
       for(int i=0; i<(*it)->getNMCContributions(); i++){

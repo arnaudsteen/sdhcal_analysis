@@ -25,6 +25,7 @@ class Layer
 {
  public:
   Layer(int ID);
+  Layer(int ID,float layGap);
   ~Layer();
   void Init(std::vector<Cluster*> &clVec);
   void Init(Track* aTrack);
@@ -52,6 +53,7 @@ class Layer
   int multiplicity;
   float correctedMultiplicity;
   float chi2;
+  float layerGap;
   LayerTag layerTag;
 };
 

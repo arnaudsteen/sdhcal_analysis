@@ -47,7 +47,6 @@ void Shower::BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,
 void Shower::FindClustersInLayer()
 {
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
     if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
@@ -81,11 +80,10 @@ std::vector<Cluster*> Shower::getIsolatedClusters()
 void Shower::FindShowerBarycenter()
 {
   //  unsigned int n=this->getHits().size();
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   std::vector<ThreeVector> positions;
   std::vector<int> clSize;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    ThreeVector t3pos( idDecoder(*it)["I"],idDecoder(*it)["J"],idDecoder(*it)["K-1"]*2.6131 );
+    ThreeVector t3pos( (*it)->getPosition()[0],(*it)->getPosition()[1],(*it)->getPosition()[2] );
     positions.push_back(t3pos);
     clSize.push_back(1);
   }
@@ -124,6 +122,7 @@ void Shower::FindShowerBarycenter()
 int Shower::FirstIntLayer()
 {
   int begin=-10;
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   if( getTracks().size()>0 ){
     for(std::vector<Track*>::iterator trackIt=getTracks().begin(); trackIt!=getTracks().end(); ++trackIt){
       if( (*trackIt)->getTrackStartingPoint().z()<=2 ){
@@ -164,7 +163,7 @@ int Shower::FirstIntLayer()
     if( (*it)->getHits().size()>=4 && (*it)->getClusterTag()!=fTrack &&
 	fabs(xbary-(*it)->getClusterPosition().x())<10&&
 	fabs(ybary-(*it)->getClusterPosition().y())<10 ){
-      begin=int((*it)->getClusterPosition().z())-1;
+      begin=idDecoder( *(*it)->getHits().begin() )["K-1"];
       break;
     }
   }
@@ -231,21 +230,6 @@ int Shower::TryAgainToFindShowerStartingLayer()
   return begin;
 }
 
-double Shower::Distance(EVENT::CalorimeterHit* hit)
-{
-  double dist=9999.;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for (std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    double d =
-      fabs( idDecoder(*it)["K-1"]-idDecoder(hit)["K-1"] )+
-      2*(fabs(idDecoder(*it)["I"]-idDecoder(hit)["I"]) + 
-	 fabs(idDecoder(*it)["J"]-idDecoder(hit)["J"]) );
-    if (d<dist) dist=d;
-    
-  }
-  return dist;
-}
-
 void Shower::HitNumber()
 {
   std::vector<int> nhit;
@@ -289,8 +273,8 @@ int Shower::NInteractingLayer()
     int count=0;
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
       if(iK==idDecoder(*it)["K-1"]){  
-	x+=idDecoder(*it)["I"];
-	y+=idDecoder(*it)["J"];
+	x+=(*it)->getPosition()[0];
+	y+=(*it)->getPosition()[1];
 	count++;
       }
     }
@@ -316,10 +300,10 @@ float Shower::Radius(int Zbegin)
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
     if(idDecoder(*it)["K-1"]>=Zbegin){
-      radius+=(	(getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*it)["K-1"]-idDecoder(*it)["I"])*
-		(getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*it)["K-1"]-idDecoder(*it)["I"])+
-		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*it)["K-1"]-idDecoder(*it)["J"])*
-		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*it)["K-1"]-idDecoder(*it)["J"]) );
+      radius+=(	(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])*
+		(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])+
+		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])*
+		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1]) );
       sumweight++;
     }
   }
@@ -422,7 +406,7 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
   delete distMinus;
   delete trackPlus;
   delete trackMinus;
-  if(1){
+  if(show){
     for(unsigned int i=0; i<96; i++)
       if(radialProfile[i]>0||radialProfileBis[i]>0)
 	streamlog_out( MESSAGE ) << ":bin:\t" << i 
@@ -465,10 +449,9 @@ float Shower::FirstLayerClusterRatio()
 float Shower::CentralHitRatio()
 {
   float ratio=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    if(fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*it)["K-1"]-idDecoder(*it)["I"])<3&&
-       fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*it)["K-1"]-idDecoder(*it)["J"])<3)
+    if(fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])<3&&
+       fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])<3)
       ratio++;
   }
   return ratio/getHits().size();
@@ -501,8 +484,8 @@ int Shower::holeFinder(int begin)
     if(k>48) continue;
     for(std::vector<EVENT::CalorimeterHit*>::iterator hit=getHits().begin(); hit!=getHits().end(); ++hit){
       if(idDecoder(*hit)["K-1"]==k &&
-	 fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*idDecoder(*hit)["K-1"]-idDecoder(*hit)["I"])<10 &&
-	 fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*idDecoder(*hit)["K-1"]-idDecoder(*hit)["J"])<10 ) {nhit++;break;}
+	 fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*hit)->getPosition()[2]-(*hit)->getPosition()[0])<10 &&
+	 fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*hit)->getPosition()[2]-(*hit)->getPosition()[1])<10 ) {nhit++;break;}
     }
     if(nhit==0) hole++;
   }
@@ -545,9 +528,9 @@ int Shower::Edge()
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator hit=getHits().begin(); hit!=getHits().end(); ++hit){
     if( idDecoder(*hit)["I"]<=8  || 
-	idDecoder(*hit)["I"]>=88 ||
+	idDecoder(*hit)["I"]>=89 ||
 	idDecoder(*hit)["J"]<=8  || 
-	idDecoder(*hit)["J"]>=88 ){
+	idDecoder(*hit)["J"]>=89 ){
       edge+=1;
     }
   }
@@ -697,11 +680,10 @@ float Shower::TransverseRatio()
   Row rowx;
   Row rowy;
   Row rowz;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    rowx.push_back(idDecoder(*it)["I"]);
-    rowy.push_back(idDecoder(*it)["J"]);
-    rowz.push_back(idDecoder(*it)["K-1"]);
+    rowx.push_back((*it)->getPosition()[0]);
+    rowy.push_back((*it)->getPosition()[1]);
+    rowz.push_back((*it)->getPosition()[2]);
   }
   pca->AddRow(rowx);
   pca->AddRow(rowy);

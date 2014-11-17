@@ -103,6 +103,7 @@ void TrackProc::init()
   tree->Branch("evtNum",&_nEvt);
   tree->Branch("effGlobal",&_effGlobal);
   tree->Branch("mulGlobal",&_mulGlobal);
+  tree->Branch("chi2Global",&_chi2Global);
   tree->Branch("trackEnd",&_trackend);
   tree->Branch("trackParams",&trackParams,"trackParams[4]/F");
   _timeCut = 20*pow(10.0,9); //20 sec
@@ -212,10 +213,10 @@ void TrackProc::findSpillEventTime(LCEvent* evt,LCCollection* col)
 
 void TrackProc::doTrackStudy()
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   streamlog_out( DEBUG ) << "numElements = " << numElements << std::endl;
   clusters.clear();
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
   int nclusters=0;
   Cluster* cluster=NULL;
@@ -231,19 +232,19 @@ void TrackProc::doTrackStudy()
     cluster->setClusterID(ID);
     clusters.push_back(cluster);
   }
-  //for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
-  //  (*it)->IsolatedCluster(clusters);
-  //for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
-  //  if( (*it)->isIsolated() ){
-  //    streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition().x() << " " << (*it)->getClusterPosition().y() << " " << (*it)->getClusterPosition().z() 
-  //			     << " is isolated and rejected" << std::endl;
-  //    delete *it; 
-  //    clusters.erase(it); 
-  //    it--;
-  //  }
-  //  else
-  //    clusterSize.push_back( (*it)->getHits().size() );
-  //}
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
+    (*it)->IsolatedCluster(clusters);
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    if( (*it)->isIsolated() ){
+      streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << IDdecoder(*(*it)->getHits().begin())["K-1"] << "\t" 
+			     << "is isolated and rejected" << std::endl;
+      delete *it; 
+      clusters.erase(it); 
+      it--;
+    }
+    else
+      clusterSize.push_back( (*it)->getHits().size() );
+  }
   std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
   if(clusters.size()>5){
     std::vector<int> _nhit = Nhit();
@@ -294,10 +295,11 @@ std::vector<int> TrackProc::Nhit()
 
 int TrackProc::Nlayer()
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int nlayer = 0;
   for(int iK=0; iK<50; iK++){
     for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
-      if(iK==int((*it)->getClusterPosition().z())) { 
+      if(iK==IDdecoder(*(*it)->getHits().begin())["K-1"]) { 
 	nlayer++; break; 
       }
     }
@@ -319,7 +321,6 @@ bool TrackProc::TrackSelection(std::vector<Cluster*> &clVec)
       trackParams[i]=aTrack->getTrackParameters()[i];
       //std::cout << trackParams[i] << "\t" ;
     }
-    //std::cout << "" << std::endl;
     TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
     aTrackCaracteristics->Init(aTrack);
     aTrackCaracteristics->ComputeTrackCaracteritics();
@@ -330,11 +331,16 @@ bool TrackProc::TrackSelection(std::vector<Cluster*> &clVec)
 		<< "aTrackCaracteristics->ReturnTrackChi2() = " << aTrackCaracteristics->ReturnTrackChi2() << std::endl;
       aTrackCaracteristics->PrintTrackParameters();
     }
+    _chi2Global=aTrackCaracteristics->ReturnTrackChi2();
     delete aTrackCaracteristics;
   }
   else {delete aTrackingAlgo; return false;}
   transversRatio=aTrackingAlgo->getTransverseRatio();
   delete aTrackingAlgo;
+  //ThreeVector px(-1,0,trackParams[1]);
+  //ThreeVector py(0,-1,trackParams[3]);
+  //if( px.cross(py).cosTheta() > 0.3 ) return false; 
+  //else streamlog_out( DEBUG ) << "costheta = " << px.cross(py).cosTheta() << std::endl;
   return true;
 }
 
@@ -369,21 +375,23 @@ bool TrackProc::findInteraction(std::vector<Cluster*> &clusters,float* &pars)
 
 void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
 {
-  int trackBegin=int((*clVec.begin())->getClusterPosition().z())-1;
-  int trackEnd=int((*(clVec.end()-1))->getClusterPosition().z())+1;
-  if(trackBegin==-1)trackBegin=0;
-  if(trackEnd==48)trackEnd=47;
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
+  int trackBegin= IDdecoder(*(*clVec.begin())->getHits().begin())["K-1"];
+  int trackEnd=IDdecoder(*(*(clVec.end()-1))->getHits().begin())["K-1"];
+  //if(trackBegin==-1)trackBegin=0;
+  //if(trackEnd==48)trackEnd=47;
   _trackend=trackEnd;
+  if(trackBegin==1) trackBegin=0;
+  if(trackEnd==46) trackEnd=47;
   for(int K=trackBegin; K<=trackEnd; K++){
     Layer* aLayer=new Layer(K);
     aLayer->Init(clVec);
-    
-    if(DATA){
-      aLayer->setMultiplicityMap(_mulMap);
-      aLayer->setMeanMultiplicity(meanMultiplicity);
-    }
+      //if(DATA){
+    //  aLayer->setMultiplicityMap(_mulMap);
+    //  aLayer->setMeanMultiplicity(meanMultiplicity);
+    //}
     aLayer->ComputeLayerProperties();
-    chi2_[K]=aLayer->getChi2();
+      chi2_[K]=aLayer->getChi2();
     if( aLayer->getLayerTag()==fUnefficientLayer ){
       //      chi2_[K]=aLayer->getChi2();
       eff1[K]=0;
@@ -396,13 +404,14 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff2[K]=aLayer->getEfficiency()[1];
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
-      if(DATA) multiCorrected[K]=aLayer->getCorrectedMultiplicity();
+      //if(DATA) multiCorrected[K]=aLayer->getCorrectedMultiplicity();
     }
     delete aLayer;
     streamlog_out( DEBUG ) << "evt number = " << _nEvt << "\t layer = " << K 
 			   << "\t efficiency = " << eff1[K] << std::endl;
   }
   _effGlobal=0;
+  _mulGlobal=0;
   int count=0;
   for(int K=trackBegin; K<=trackEnd; K++){
     if(K==-1||K==48)continue;
@@ -413,6 +422,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
   }
   _mulGlobal=_mulGlobal/_effGlobal;
   _effGlobal=_effGlobal/count;
+  streamlog_out( DEBUG ) << "_effGlobal = " << _effGlobal << std::endl; 
 }
 
 
@@ -464,13 +474,11 @@ void TrackProc::processEvent( LCEvent * evt )
       	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
       	if(IDdecoder(hit)["K-1"]>48) {continue;}
       	calohit.push_back(hit);
-      	//	std::cout << IDdecoder(hit)["I"] << " " << IDdecoder(hit)["J"] << " " << IDdecoder(hit)["K-1"] << std::endl;
       }
       if(DATA) {
         findEventTime(evt,col);
         findSpillEventTime(evt,col);
       }
-      UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
       doTrackStudy();
       
     }
@@ -479,7 +487,7 @@ void TrackProc::processEvent( LCEvent * evt )
     }
   }
   _nEvt ++ ;
-  std::cout << "Event processed : " << _nEvt << std::endl;
+  streamlog_out( MESSAGE ) << "Event processed : " << _nEvt << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------

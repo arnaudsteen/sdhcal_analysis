@@ -17,7 +17,7 @@ void Linear3DFit::ComputeChi2() {
     ThreeVector temp(this->GetNormaleProjection( positions.at(i) ));
     float d = this->GetNormaleProjection( positions.at(i) ).mag();
     float mult = this->GetClusterSize().at(i);
-    float err = mult/sqrt(12);
+    float err = mult/sqrt(12/100.);
     chi2 += (d/err)*(d/err);
   }
   chi2=chi2/(positions.size()-1);
@@ -79,9 +79,11 @@ void Linear3DFit::Fit() {
   params[2] = (D1*C2-E2*A1)/(B1*D1-A1*A1);
   params[3] = (E2*B1-C2*A1)/(B1*D1-A1*A1);
 
-  paramsError[0] = sqrt(A1/(B1*D1-A1*A1));
+
+
+  paramsError[0] = sqrt(D1/(B1*D1-A1*A1));
   paramsError[1] = sqrt(B1/(B1*D1-A1*A1));
-  paramsError[2] = sqrt(A1/(B1*D1-A1*A1));
+  paramsError[2] = sqrt(D1/(B1*D1-A1*A1));
   paramsError[3] = sqrt(B1/(B1*D1-A1*A1));
 
 }

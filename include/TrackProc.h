@@ -125,6 +125,7 @@ class TrackProc : public Processor {
   float trackParams[4];
   float _effGlobal;
   float _mulGlobal;
+  float _chi2Global;
   std::vector<int> clusterSize;
 } ;
 

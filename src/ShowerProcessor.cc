@@ -519,7 +519,6 @@ void ShowerProcessor::ShowerAnalysis()
     //density=shower->Density();
   }
   begin=shower->FirstIntLayer();
-  //streamlog_out( MESSAGE ) << "begin = " << begin << std::endl;
   clusterMips=isolClusVec.size();
   isolClusVec.clear();
   nclusters=shower->getClusters().size();

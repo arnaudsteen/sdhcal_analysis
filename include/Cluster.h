@@ -30,7 +30,6 @@ class Cluster
   void BuildHoughSpace();
   void buildClusterPosition();
   void IsolationCriterion(std::vector<Cluster*> &clVec);
-  bool IsATrueCluster(std::vector<Cluster*> &clVec);
   void BuildCluster(std::vector<EVENT::CalorimeterHit*> &temp,std::vector<EVENT::CalorimeterHit*> &calohit,EVENT::CalorimeterHit* &hit);
   void IsolatedCluster(std::vector<Cluster*> &clVec);
   void PrintClusterInfo();

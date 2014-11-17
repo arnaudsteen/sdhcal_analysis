@@ -125,7 +125,6 @@ void AsicMapProcessor::doTrackStudy()
 {
   clusters.clear();
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
   int nclusters=0;
   Cluster* cluster=NULL;
@@ -221,16 +220,16 @@ bool AsicMapProcessor::TrackSelection(const std::vector<Cluster*> &clVec)
   Linear3DFit* fit=new Linear3DFit(pos,clSize);
   fit->Fit();
   float *par=fit->GetFitParameters();
-  if(findInteraction(clVec,par))return false;
   streamlog_out( DEBUG ) << "nhit = " << numElements << "\t" 
 			 << "transversRatio = " << transversRatio << "\t"
 			 << "chi2 = " << fit->GetChi2() << std::endl;
-  if(fit->GetChi2()>2){delete fit;return false;}
+  ThreeVector px(-1,0,par[1]);
+  ThreeVector py(0,-1,par[3]);
+  float chi2=fit->GetChi2();
   delete fit;
-  streamlog_out( DEBUG ) << "track equation:\t" 
-			 << "(zx)\t::" << par[1] << "*z+" << par[0] << "::\t" 
-			 << "(zy)\t::" << par[3] << "*z+" << par[2] << "::\t" 
-			 << std::endl;
+  if( px.cross(py).cosTheta() < 0.9 ) return false;
+  if( chi2 > 2 ) return false;
+  if( findInteraction(clVec,par) ) return false;
   return true;
 }
 //------------------------------------------------------------------------------------------------------------------------
@@ -241,15 +240,15 @@ bool AsicMapProcessor::findInteraction(const std::vector<Cluster*> &clusters,flo
     float xbary=pars[0]+pars[1]*(*it)->getClusterPosition().z();
     float ybary=pars[2]+pars[3]*(*it)->getClusterPosition().z();
     if( (*it)->getHits().size()<4 || 
-	fabs(xbary-(*it)->getClusterPosition().x())>10||
-	fabs(ybary-(*it)->getClusterPosition().y())>10 ) continue;
+	fabs(xbary-(*it)->getClusterPosition().x())>100||
+	fabs(ybary-(*it)->getClusterPosition().y())>100 ) continue;
     int count=0;
     for(std::vector<Cluster*>::const_iterator jt=clusters.begin(); jt!=clusters.end(); ++jt){
       if( (*jt)->getHits().size()>=5 && 
 	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()>0&&
-	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()<4&&
-	  fabs(xbary-(*jt)->getClusterPosition().x())<10&&
-	  fabs(ybary-(*jt)->getClusterPosition().y())<10 )
+	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()<40&&
+	  fabs(xbary-(*jt)->getClusterPosition().x())<100&&
+	  fabs(ybary-(*jt)->getClusterPosition().y())<100 )
 	count++;
     }
     if(count>=3){
@@ -269,12 +268,11 @@ void AsicMapProcessor::ComputePCA()
   Row rowx;
   Row rowy;
   Row rowz;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
-    rowx.push_back(idDecoder(*jt)["I"]);
-    rowy.push_back(idDecoder(*jt)["J"]);
-    rowz.push_back(idDecoder(*jt)["K-1"]);
+    rowx.push_back( (*jt)->getPosition()[0] );
+    rowy.push_back( (*jt)->getPosition()[1] );
+    rowz.push_back( (*jt)->getPosition()[2] );
     }
   }
   pca->AddRow(rowx);
@@ -294,18 +292,18 @@ void AsicMapProcessor::ComputePCA()
 
 void AsicMapProcessor::LayerProperties(const std::vector<Cluster*> &clVec)
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   int trackBegin=int((*clVec.begin())->getClusterPosition().z())-1;
   int trackEnd=int((*(clVec.end()-1))->getClusterPosition().z())+1;
   std::vector<ThreeVector> pos;
   std::vector<int> clSize;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   for(int K=trackBegin; K<=trackEnd; K++){
     if(K==-1||K==activeLayers)continue;
     pos.clear();
     clSize.clear();
     std::vector<Cluster*> clustersInK;
     for(std::vector<Cluster*>::const_iterator it=clVec.begin(); it!=clVec.end(); ++it){
-      if( int((*it)->getClusterPosition().z()) == K ) {
+      if( IDdecoder( *(*it)->getHits().begin() )["K-1"] == K ) {
 	clustersInK.push_back(*it);
 	continue;
       }
@@ -329,7 +327,7 @@ void AsicMapProcessor::LayerProperties(const std::vector<Cluster*> &clVec)
     if( !clustersInK.empty() ){
       std::vector<Cluster*>::iterator closestIt=clustersInK.begin();
       for(std::vector<Cluster*>::iterator it=clustersInK.begin(); it!=clustersInK.end(); ++it){
-    	if( (*it)->getClusterPosition().z() != K ) {
+    	if( IDdecoder( *(*it)->getHits().begin() )["K-1"] != K ) {
     	  streamlog_out( MESSAGE ) << "Algo Problem" << std::endl;
     	  return;
     	}
@@ -338,8 +336,8 @@ void AsicMapProcessor::LayerProperties(const std::vector<Cluster*> &clVec)
     	  closestIt=it;
       }
       for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-    	if( sqrt( pow( idDecoder(*it)["I"]-(par[1]*K+par[0]),2 ) + 
-    		  pow( idDecoder(*it)["J"]-(par[3]*K+par[2]),2 ) ) <= 2.5 ){
+    	if( sqrt( pow( (*it)->getPosition()[0]-(par[1]*K+par[0]),2 ) + 
+    		  pow( (*it)->getPosition()[1]-(par[3]*K+par[2]),2 ) ) <= 25 ){
     	  asicMap[asicKey]->Update( (*closestIt)->getHits().size() );
     	  effi=true;
     	  break;
@@ -353,8 +351,8 @@ void AsicMapProcessor::LayerProperties(const std::vector<Cluster*> &clVec)
 
 int AsicMapProcessor::findAsicKey(const int layer,const float *par)
 {
-  float I=int(round(par[1]*layer+par[0]));
-  float J=int(round(par[3]*layer+par[2]));
+  float I=round( (par[1]*layer+par[0])/10.5 );
+  float J=round( (par[3]*layer+par[2])/10.5 );
   if(I>96||I<0||J>96||J<0) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;

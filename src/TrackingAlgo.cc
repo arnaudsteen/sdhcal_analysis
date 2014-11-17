@@ -61,11 +61,10 @@ void TrackingAlgo::ComputeTransverseRatio()
   Row rowx;
   Row rowy;
   Row rowz;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   for(std::vector<EVENT::CalorimeterHit*>::iterator jt=hits.begin(); jt!=hits.end(); ++jt){
-    rowx.push_back(idDecoder(*jt)["I"]);
-    rowy.push_back(idDecoder(*jt)["J"]);
-    rowz.push_back(idDecoder(*jt)["K-1"]);
+    rowx.push_back( (*jt)->getPosition()[0]);
+    rowy.push_back( (*jt)->getPosition()[1]);
+    rowz.push_back( (*jt)->getPosition()[2]);
   }
   pca->AddRow(rowx);
   pca->AddRow(rowy);
@@ -95,7 +94,7 @@ void TrackingAlgo::DoTracking()
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     ThreeVector temp( (*it)->getClusterPosition().x(),
 		      (*it)->getClusterPosition().y(),
-		      (*it)->getClusterPosition().z()*2.6131 );
+		      (*it)->getClusterPosition().z() );
     pos.push_back(temp);
     clSize.push_back( (*it)->getHits().size() );
   }
@@ -105,7 +104,11 @@ void TrackingAlgo::DoTracking()
   //}
   Linear3DFit* fit=new Linear3DFit(pos,clSize);
   fit->Fit();
-  if( fit->GetChi2()>10 ){
+  if( fit->GetChi2()>100 ){
+    streamlog_out( DEBUG ) << "track equation:\t" 
+			   << "(zx)\t::" << fit->GetFitParameters()[1] << "*z+" << fit->GetFitParameters()[0] << "::\t" 
+			   << "(zy)\t::" << fit->GetFitParameters()[3] << "*z+" << fit->GetFitParameters()[2] << "::\t" 
+			   << std::endl;
     streamlog_out( DEBUG ) << "fit->GetChi2() = " << fit->GetChi2() << std::endl;
     trackingSuccess=false; 
     delete fit;
@@ -119,7 +122,7 @@ void TrackingAlgo::DoTracking()
   //  return;
   //}
   if( findInteraction(clusters,fit->GetFitParameters()) ){
-    streamlog_out( DEBUG ) << "findInteraction(clusters,fit->GetFitParameters()) is true" << std::endl;
+    streamlog_out( MESSAGE ) << "findInteraction(clusters,fit->GetFitParameters()) is true" << std::endl;
     trackingSuccess=false; 
     delete fit;
     return;

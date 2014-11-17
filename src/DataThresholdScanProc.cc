@@ -6,7 +6,6 @@
 #include <EVENT/LCCollection.h>
 #include <IMPL/LCCollectionVec.h>
 #include <EVENT/LCParameters.h>
-#include <UTIL/CellIDDecoder.h>
 
 // ----- include for verbosity dependend logging ---------
 #include "marlin/VerbosityLevels.h"
@@ -94,7 +93,6 @@ void DataThresholdScanProc::init()
 
   _nRun = 0 ;
   _nEvt = 0 ;
-  UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
 
   initThrScanLayerVec();
 
@@ -229,7 +227,6 @@ void DataThresholdScanProc::doTrackStudy()
   streamlog_out( DEBUG ) << "numElements = " << numElements << std::endl;
   clusters.clear();
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
   int nclusters=0;
   Cluster* cluster=NULL;
@@ -292,7 +289,6 @@ void DataThresholdScanProc::processEvent( LCEvent * evt )
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       calohit.clear();
-      UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
       for (int j=0; j < numElements; ++j) {
 	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
 	calohit.push_back(hit);

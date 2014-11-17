@@ -23,7 +23,6 @@ class Shower
   Shower(){showerAxe=NULL;}
   ~Shower();
   void BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,std::vector<EVENT::CalorimeterHit*> &calohit,EVENT::CalorimeterHit* &hit);
-  double Distance(EVENT::CalorimeterHit* hit);
   void FindClustersInLayer();
   std::vector<Cluster*> getIsolatedClusters();
   void FindShowerBarycenter();
