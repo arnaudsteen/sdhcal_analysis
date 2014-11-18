@@ -32,7 +32,8 @@ class Layer
   void ComputeLayerProperties();
   void MultiplicityMapCorrection(Cluster* cluster);
   int findAsicKey(Cluster* cluster);
-
+  void setLayerEdges(float* b);
+  
   inline std::vector<int> &getEfficiency(){return effThr;}
   inline int getMultiplicity(){return multiplicity;}
   inline float getCorrectedMultiplicity(){return correctedMultiplicity;}
@@ -61,6 +62,10 @@ class Layer
   float xExpected;
   float yExpected;
   LayerTag layerTag;
+  float edgeXMin;
+  float edgeYMin;
+  float edgeXMax;
+  float edgeYMax;
 };
 
 class LayerInShower : public Layer

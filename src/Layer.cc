@@ -19,6 +19,10 @@ Layer::Layer(int ID)
   chi2=0;
   layerGap=26.131; //mm default
   layerZPosition=layID*layerGap;
+  edgeXMin=5.0;
+  edgeYMin=5.0;
+  edgeXMax=1000.0;
+  edgeYMax=1000.0;
 }
 
 Layer::Layer(int ID,float layGap)
@@ -65,6 +69,14 @@ void Layer::Init(Track* aTrack)
     streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=aTrack->getClusters().size()" << std::endl;
 }
 
+void Layer::setLayerEdges(float *b)
+{
+  edgeXMin=b[0];
+  edgeYMin=b[0];
+  edgeXMax=b[1];
+  edgeYMax=b[1];
+}
+
 void Layer::ComputeLayerProperties()
 {
   float old_dist=0;
@@ -82,7 +94,7 @@ void Layer::ComputeLayerProperties()
     yExpected=aTrack->getTrackParameters()[3]*layerZPosition+aTrack->getTrackParameters()[2];
     ThreeVector px(-1,0,aTrack->getTrackParameters()[1]);
     ThreeVector py(0,-1,aTrack->getTrackParameters()[3]);
-    if(xExpected>1008||xExpected<0||yExpected>1008||yExpected<0){
+    if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
       streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " << std::endl;
@@ -224,9 +236,9 @@ void LayerInShower::ComputeShowerLayerProperties()
     std::cout << "LayerInShower::ComputeShowerLayerProperties() 3" << std::endl;
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
-    yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
-    if(xExpected>96||xExpected<0||yExpected>96||yExpected<0){
+    xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
+    if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
       streamlog_out( MESSAGE ) << "layer " << layID << " is undefined " << std::endl;
@@ -333,9 +345,9 @@ void LayerForThrScan::ComputeLayerProperties()
       }
 
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    xExpected=aTrack->getTrackParameters()[1]*layID+aTrack->getTrackParameters()[0];
-    yExpected=aTrack->getTrackParameters()[3]*layID+aTrack->getTrackParameters()[2];
-    if(xExpected>94||xExpected<2||yExpected>94||yExpected<2){
+    xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
+    if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
       delete aTrackCaracteristics;

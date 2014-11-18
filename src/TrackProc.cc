@@ -384,8 +384,11 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
   for(int K=trackBegin; K<=trackEnd; K++){
     Layer* aLayer=new Layer(K);
     aLayer->Init(clVec);
-    if(!DATA)
+    if(!DATA){
+      float edges[2];edges[0]=-490;edges[1]=510;
+      aLayer->setLayerEdges(edges);
       aLayer->setLayerZPosition( (K*26.131-625.213) );
+    }
     aLayer->ComputeLayerProperties();
     chi2_[K]=aLayer->getChi2();
     if( aLayer->getLayerTag()==fUnefficientLayer ){

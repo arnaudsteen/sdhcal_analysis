@@ -320,8 +320,8 @@ void AsicMapProcessor::LayerProperties(std::vector<Cluster*> &clVec)
 
 int AsicMapProcessor::findAsicKey(int layer,float x, float y)
 {
-  float I=round( x/10.5 );
-  float J=round( y/10.5 );
+  float I=round( x/10.408 );
+  float J=round( y/10.408 );
   if(I>96||I<0||J>96||J<0) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;
