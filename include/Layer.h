@@ -11,7 +11,7 @@
 #include "Cluster.h"
 #include "Track.h"
 #include "TrackingAlgo.h"
-
+#include "Distance.h"
 
 enum LayerTag{
   fUndefinedLayer,

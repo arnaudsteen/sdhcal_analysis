@@ -79,8 +79,6 @@ void Linear3DFit::Fit() {
   params[2] = (D1*C2-E2*A1)/(B1*D1-A1*A1);
   params[3] = (E2*B1-C2*A1)/(B1*D1-A1*A1);
 
-
-
   paramsError[0] = sqrt(D1/(B1*D1-A1*A1));
   paramsError[1] = sqrt(B1/(B1*D1-A1*A1));
   paramsError[2] = sqrt(D1/(B1*D1-A1*A1));

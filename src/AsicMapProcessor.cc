@@ -206,35 +206,32 @@ int AsicMapProcessor::Nlayer()
 
 bool AsicMapProcessor::TrackSelection(std::vector<Cluster*> &clVec)
 {
-  //if(numElements>200) return false;
-  //if(float(numElements)/nlayer>3) return false;
-  //if(nlayer<30) return false;
-  if(transversRatio>0.05)return false;
-  std::vector<ThreeVector> pos;
-  std::vector<ThreeVector> weights;
-  std::vector<int> clSize;
-  for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    pos.push_back((*it)->getClusterPosition());
-    clSize.push_back( (*it)->getHits().size() );
+  //if(transversRatio>0.05)return false;
+  TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
+  aTrackingAlgo->Init(clVec);
+  aTrackingAlgo->DoTracking();
+  if(aTrackingAlgo->TrackFinderSuccess()){
+    ThreeVector px(-1,0,aTrackingAlgo->ReturnTrack()->getTrackParameters()[1]);
+    ThreeVector py(0,-1,aTrackingAlgo->ReturnTrack()->getTrackParameters()[3]);
+    TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
+    aTrackCaracteristics->Init(aTrackingAlgo->ReturnTrack());
+    aTrackCaracteristics->ComputeTrackCaracteritics();
+    if(aTrackCaracteristics->ReturnTrackChi2()>5||
+       px.cross(py).cosTheta() < 0.9||
+       findInteraction(clVec,aTrackingAlgo->ReturnTrack()->getTrackParameters()) ){
+      delete aTrackCaracteristics;
+      delete aTrackingAlgo;
+      return false;
+    }
+    delete aTrackCaracteristics;
   }
-  Linear3DFit* fit=new Linear3DFit(pos,clSize);
-  fit->Fit();
-  float *par=fit->GetFitParameters();
-  streamlog_out( DEBUG ) << "nhit = " << numElements << "\t" 
-			 << "transversRatio = " << transversRatio << "\t"
-			 << "chi2 = " << fit->GetChi2() << std::endl;
-  ThreeVector px(-1,0,par[1]);
-  ThreeVector py(0,-1,par[3]);
-  float chi2=fit->GetChi2();
-  delete fit;
-  if( px.cross(py).cosTheta() < 0.9 ) return false;
-  if( chi2 > 2 ) return false;
-  if( findInteraction(clVec,par) ) return false;
+  else {delete aTrackingAlgo; return false;}
+  delete aTrackingAlgo;
   return true;
 }
 //------------------------------------------------------------------------------------------------------------------------
 
-bool AsicMapProcessor::findInteraction(std::vector<Cluster*> &clusters,float* &pars)
+bool AsicMapProcessor::findInteraction(std::vector<Cluster*> &clusters,std::vector<float> pars)
 {
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     float xbary=pars[0]+pars[1]*(*it)->getClusterPosition().z();

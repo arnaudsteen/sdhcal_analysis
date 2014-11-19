@@ -63,7 +63,7 @@ class AsicMapProcessor : public Processor {
   bool TrackSelection(std::vector<Cluster*> &clVec);
   virtual void doTrackStudy();
   virtual int findAsicKey(int layer, float x, float y);
-  virtual bool findInteraction(std::vector<Cluster*> &clusters,float* &pars);
+  virtual bool findInteraction(std::vector<Cluster*> &clusters,std::vector<float> pars);
  protected:
 
   int _nRun ;

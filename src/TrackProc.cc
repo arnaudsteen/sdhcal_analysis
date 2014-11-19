@@ -236,7 +236,7 @@ void TrackProc::doTrackStudy()
     (*it)->IsolatedCluster(clusters);
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->isIsolated() ){
-      streamlog_out( MESSAGE ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << IDdecoder(*(*it)->getHits().begin())["K-1"] << "\t" 
+      streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << IDdecoder(*(*it)->getHits().begin())["K-1"] << "\t" 
 			       << "is isolated and rejected" << std::endl;
       delete *it; 
       clusters.erase(it); 
@@ -500,6 +500,6 @@ void TrackProc::end(){
   file->Close();
   std::cout << "TrackProc::end()  " << name() 
      	    << " processed " << _nEvt << " events in " << _nRun << " runs "
-     	    << std::endl ;  
+     	    << std::endl ; 
 }
 

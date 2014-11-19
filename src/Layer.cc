@@ -14,7 +14,7 @@ Layer::Layer(int ID)
   multiplicity=0;
   correctedMultiplicity=0;
   layerTag=fUndefinedLayer;
-  effDistanceCut=100.; //mm
+  effDistanceCut=50.; //mm
   meanMultiplicity=0;
   chi2=0;
   layerGap=26.131; //mm default
@@ -92,12 +92,13 @@ void Layer::ComputeLayerProperties()
     chi2=aTrack->getChi2();
     xExpected=aTrack->getTrackParameters()[1]*layerZPosition+aTrack->getTrackParameters()[0];
     yExpected=aTrack->getTrackParameters()[3]*layerZPosition+aTrack->getTrackParameters()[2];
-    ThreeVector px(-1,0,aTrack->getTrackParameters()[1]);
-    ThreeVector py(0,-1,aTrack->getTrackParameters()[3]);
     if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
-      streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " << std::endl;
+      streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " 
+			     << "xExpected = " << xExpected << "\t"
+			     << "yExpected = " << yExpected << "\t"
+			     << "layerZPosition = " << layerZPosition << std::endl;
       return;
     }
     this->setLayerTag(fInsideLayerImpact); 
@@ -107,27 +108,28 @@ void Layer::ComputeLayerProperties()
       delete aTrackingAlgo;
       return;
     }
+    DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
+    dist->Init(aTrack);
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
-    old_dist=sqrt( pow( (*closestIt)->getClusterPosition().x()-xExpected,2 ) + pow( (*closestIt)->getClusterPosition().y()-yExpected,2 ) );
+    old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( IDdecoder(*(*it)->getHits().begin())["K-1"] != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
-	return;
-      }
-      new_dist=sqrt( pow( (*it)->getClusterPosition().x()-xExpected,2 ) +  pow( (*it)->getClusterPosition().y()-yExpected,2 ) );
+      if( IDdecoder(*(*it)->getHits().begin())["K-1"] != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      new_dist=dist->CalculateDistance(*it);
       if( new_dist<old_dist ){
 	closestIt=it;
 	old_dist=new_dist;
       }
     }
+    delete dist;
+    DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
+    distHit->Init(aTrack);
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-      streamlog_out( DEBUG ) << "xExpected = " << xExpected << "\t yExpected = " << yExpected << std::endl;
-      streamlog_out( DEBUG ) << "(*it)->getPosition()[0] = " << (*it)->getPosition()[0] << "\t (*it)->getPosition()[1] = " << (*it)->getPosition()[1] << std::endl;
-      if( sqrt( pow( (*it)->getPosition()[0]-(xExpected),2 ) + 
-		pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= effDistanceCut ){
+      if( distHit->CalculateDistance(*it) < effDistanceCut ){
 	this->setLayerTag(fEfficientLayer);
 	break;
       }
     }
+    delete distHit;
     if(this->getLayerTag()==fEfficientLayer){
       this->multiplicity=(*closestIt)->getHits().size();
       if(meanMultiplicity!=0)
@@ -148,20 +150,22 @@ void Layer::ComputeLayerProperties()
     }
     else{
       this->setLayerTag(fUnefficientLayer);
-      //  streamlog_out( MESSAGE ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
-      //			     << sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
-      //				      ((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
-      //			     << "\t chi2 = " << chi2 
-      //			     << "\t clusterInLayer.size() = " << clustersInLayer.size() 
-      //			     << "\t xExpected = " << xExpected << "\t yExpected = " << yExpected
-      //			     << std::endl;
-      //  for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      //	for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
-      //	  streamlog_out( MESSAGE ) << "(*it)->getPosition()[0] = " << (*jt)->getPosition()[0] << "\t" 
-      //				 << "(*it)->getPosition()[1] = " << (*jt)->getPosition()[1] << "\t" 
-      //				 << "(*it)->getPosition()[2] = " << (*jt)->getPosition()[2] << std::endl;
-      //	}
-      //  }    
+      /*streamlog_out( MESSAGE ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
+	<< sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
+	((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
+	<< "\t chi2 = " << chi2 
+	<< "\t clusterInLayer.size() = " << clustersInLayer.size() 
+	<< "\t xExpected = " << xExpected << "\t yExpected = " << yExpected
+	<< std::endl;
+	streamlog_out( MESSAGE ) << "x found = " << (*closestIt)->getClusterPosition().x() << "\t"
+	<< "y found = " << (*closestIt)->getClusterPosition().y() << std::endl;
+	for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
+	for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
+	streamlog_out( MESSAGE ) << "(*it)->getPosition()[0] = " << (*jt)->getPosition()[0] << "\t" 
+	<< "(*it)->getPosition()[1] = " << (*jt)->getPosition()[1] << "\t" 
+	<< "(*it)->getPosition()[2] = " << (*jt)->getPosition()[2] << std::endl;
+      	}
+	}*/    
     }
   }
   delete aTrackingAlgo;
@@ -228,12 +232,14 @@ void LayerInShower::Init(Track* aTrack,std::vector<Cluster*> &clVecShower)
 
 void LayerInShower::ComputeShowerLayerProperties()
 {
+  float old_dist=0;
+  float new_dist=0;
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
+  if(clusters.size()<5) return;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
   aTrackingAlgo->DoTracking();
-  std::cout << "LayerInShower::ComputeShowerLayerProperties() 2" << std::endl;
   if(aTrackingAlgo->TrackFinderSuccess()){
-    std::cout << "LayerInShower::ComputeShowerLayerProperties() 3" << std::endl;
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
     xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
@@ -241,59 +247,45 @@ void LayerInShower::ComputeShowerLayerProperties()
     if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
-      streamlog_out( MESSAGE ) << "layer " << layID << " is undefined " << std::endl;
+      streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " << std::endl;
       return;
     }
     this->setLayerTag(fInsideLayerImpact); 
     if(clustersInLayer.empty()){
-      streamlog_out( MESSAGE ) << "find one empty layer = " << layID << std::endl;
+      streamlog_out( DEBUG ) << "find one empty layer = " << layID << std::endl;
       delete aTrackingAlgo;
       return;
     }
+    DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
+    dist->Init(aTrack);
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
+    old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( (*it)->getClusterPosition().z() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
-	return;
-      }
-      if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
-	  fabs((*it)->getClusterPosition().y()-yExpected) < fabs((*closestIt)->getClusterPosition().y()-yExpected) ) 
+      if( IDdecoder(*(*it)->getHits().begin())["K-1"] != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      new_dist=dist->CalculateDistance(*it);
+      if( new_dist<old_dist ){
 	closestIt=it;
+	old_dist=new_dist;
+      }
     }
+    delete dist;
+    DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
+    distHit->Init(aTrack);
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-      if( sqrt( pow( (*it)->getPosition()[0]-(xExpected),2 ) + 
-		pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= effDistanceCut ){
+      if( distHit->CalculateDistance(*it) < effDistanceCut ){
 	this->setLayerTag(fEfficientLayer);
 	break;
       }
     }
+    delete distHit;
     if(this->getLayerTag()==fEfficientLayer){
       this->multiplicity=(*closestIt)->getHits().size();
-      //if(meanMultiplicity!=0)
-      //	this->MultiplicityMapCorrection( (*closestIt) );
-      //int myEffTab[2];for(int i=0; i<2;i++) myEffTab[i]=0;
-      //for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-      //	if( (int)round((*it)->getEnergy())==3 ) {myEffTab[0]=1;myEffTab[1]=1; break;}
-      //	if( (int)round((*it)->getEnergy())==2 ) {myEffTab[0]=1;}
-      //}
-      //effThr.push_back(1);
-      //effThr.push_back(myEffTab[0]);
-      //effThr.push_back(myEffTab[1]);
-      //streamlog_out( DEBUG ) << "layer " << layID 
-      //			     << "\t effThr[0] = " << effThr[0] 
-      //			     << "\t effThr[1] = " << effThr[1] 
-      //			     << "\t effThr[2] = " << effThr[2] 
-      //			     << std::endl;
     }
     else{
       this->setLayerTag(fUnefficientLayer);
-      streamlog_out( MESSAGE ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
-			       << sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
-					((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
-			       << std::endl;
     }
     chi2=aTrack->getChi2();
   }
-  std::cout << "LayerInShower::ComputeShowerLayerProperties() last" << std::endl;
   delete aTrackingAlgo;
 }
 
