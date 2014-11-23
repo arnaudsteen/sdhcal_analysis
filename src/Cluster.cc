@@ -8,18 +8,13 @@
 #include "cmath"
 
 // 2D digital cluster
-Cluster::Cluster(std::string decoder,std::string Kdecoder)
+Cluster::Cluster(int layID)
 {
   memset(rhox,0,tetamax*sizeof(int));
   memset(rhoy,0,tetamax*sizeof(int));
-  //for(size_t i=0; i<tetamax; i++){
-  //  rhox[i]=0;
-  //  rhoy[i]=0;
-  //}
   setClusterTag(fUndefined);
-  UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding(decoder.c_str());
-  HitDecoder=decoder;
-  KDecoder=Kdecoder;
+  UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
+  layerID=layID;
   ThreeVector pos(0,0,0);
   this->setClusterPosition(pos);
   this->setIsolation(true);
@@ -102,10 +97,10 @@ void Cluster::BuildCluster(std::vector<EVENT::CalorimeterHit*> &temp,
 			   std::vector<EVENT::CalorimeterHit*> &calohit,
 			   EVENT::CalorimeterHit* &hit)
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(HitDecoder.c_str());
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     if(std::find(temp.begin(), temp.end(), (*it) )!=temp.end() )continue;
-    if( idDecoder(*it)[KDecoder.c_str()]==idDecoder(hit)[KDecoder.c_str()] &&
+    if( idDecoder(*it)["K-1"]==idDecoder(hit)["K-1"] &&
 	fabs( idDecoder(*it)["I"]-idDecoder(hit)["I"] )<=1 &&
 	fabs( idDecoder(*it)["J"]-idDecoder(hit)["J"] )<=1 ){
       this->AddHits(*it);

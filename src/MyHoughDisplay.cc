@@ -94,12 +94,12 @@ void MyHoughDisplayProc::processRunHeader( LCRunHeader* run)
 
 void MyHoughDisplayProc::doClusters()
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    Cluster *cl=new Cluster("M:3,S-1:3,I:9,J:9,K-1:6","K-1");
+    Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
     cl->AddHits(*it);
     ID+=1;
     _temp.push_back(*it);

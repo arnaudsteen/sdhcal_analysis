@@ -6,7 +6,6 @@
 #include <vector>
 #include "math.h"
 #include <TMath.h>
-#include <UTIL/CellIDDecoder.h>
 
 Layer::Layer(int ID)
 {
@@ -47,9 +46,8 @@ Layer::~Layer()
 
 void Layer::Init(std::vector<Cluster*> &clVec)
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<Cluster*>::iterator clIt=clVec.begin(); clIt!=clVec.end(); ++clIt){
-    if( IDdecoder( *(*clIt)->getHits().begin() )["K-1"]==layID ) 
+    if( (*clIt)->getLayerID()==layID ) 
       clustersInLayer.push_back(*clIt);
     else clusters.push_back(*clIt);
   }
@@ -59,9 +57,8 @@ void Layer::Init(std::vector<Cluster*> &clVec)
 
 void Layer::Init(Track* aTrack)
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(std::vector<Cluster*>::iterator clIt=aTrack->getClusters().begin(); clIt!=aTrack->getClusters().end(); ++clIt){
-    if( IDdecoder( *(*clIt)->getHits().begin() )["K-1"]==layID ) 
+    if( (*clIt)->getLayerID()==layID ) 
       clustersInLayer.push_back(*clIt);
     else clusters.push_back(*clIt);
   }
@@ -81,7 +78,6 @@ void Layer::ComputeLayerProperties()
 {
   float old_dist=0;
   float new_dist=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   if(clusters.size()<5) return;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
@@ -113,7 +109,7 @@ void Layer::ComputeLayerProperties()
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( IDdecoder(*(*it)->getHits().begin())["K-1"] != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
       new_dist=dist->CalculateDistance(*it);
       if( new_dist<old_dist ){
 	closestIt=it;
@@ -205,28 +201,28 @@ LayerInShower::~LayerInShower()
 void LayerInShower::Init(std::vector<Cluster*> &clVec,std::vector<Cluster*> &clVecShower)
 {
   for(std::vector<Cluster*>::iterator clIt=clVec.begin(); clIt!=clVec.end(); ++clIt){
-    if( (int)round((*clIt)->getClusterPosition().z())==layID ) 
+    if( (*clIt)->getLayerID()==layID ) 
       clustersInLayer.push_back(*clIt);
     else clusters.push_back(*clIt);
   }
   if(clusters.size()+clustersInLayer.size()!=clVec.size())
     streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=clVec.size()" << std::endl;
   for(std::vector<Cluster*>::iterator clIt=clVecShower.begin(); clIt!=clVecShower.end(); ++clIt)
-    if( (int)(*clIt)->getClusterPosition().z()==layID )
+    if( (*clIt)->getLayerID()==layID )
       clustersInShower.push_back(*clIt);
 }
 
 void LayerInShower::Init(Track* aTrack,std::vector<Cluster*> &clVecShower)
 {
   for(std::vector<Cluster*>::iterator clIt=aTrack->getClusters().begin(); clIt!=aTrack->getClusters().end(); ++clIt){
-    if( (int)round((*clIt)->getClusterPosition().z())==layID ) 
+    if( (*clIt)->getLayerID()==layID ) 
       clustersInLayer.push_back(*clIt);
     else clusters.push_back(*clIt);
   }
   if(clusters.size()+clustersInLayer.size()!=aTrack->getClusters().size())
     streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=aTrack->getClusters().size()" << std::endl;
   for(std::vector<Cluster*>::iterator clIt=clVecShower.begin(); clIt!=clVecShower.end(); ++clIt)
-    if( (int)(*clIt)->getClusterPosition().z()==layID )
+    if( (*clIt)->getLayerID()==layID )
       clustersInShower.push_back(*clIt);
 }
 
@@ -234,7 +230,6 @@ void LayerInShower::ComputeShowerLayerProperties()
 {
   float old_dist=0;
   float new_dist=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   if(clusters.size()<5) return;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
@@ -253,6 +248,8 @@ void LayerInShower::ComputeShowerLayerProperties()
     this->setLayerTag(fInsideLayerImpact); 
     if(clustersInLayer.empty()){
       streamlog_out( DEBUG ) << "find one empty layer = " << layID << std::endl;
+      if( CheckIfTrueUnfficientLayer() )
+	this->setLayerTag(fUnefficientLayer);
       delete aTrackingAlgo;
       return;
     }
@@ -261,7 +258,7 @@ void LayerInShower::ComputeShowerLayerProperties()
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( IDdecoder(*(*it)->getHits().begin())["K-1"] != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
       new_dist=dist->CalculateDistance(*it);
       if( new_dist<old_dist ){
 	closestIt=it;
@@ -293,9 +290,9 @@ bool LayerInShower::CheckIfTrueUnfficientLayer()
 {
   if(clustersInShower.empty())
     return true;  
-  std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
+  std::vector<Cluster*>::iterator closestIt=clustersInShower.begin();
   for(std::vector<Cluster*>::iterator it=clustersInShower.begin(); it!=clustersInShower.end(); ++it){
-    if( (*it)->getClusterPosition().z() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
+    if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
       return false;
     }
     if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
@@ -304,7 +301,7 @@ bool LayerInShower::CheckIfTrueUnfficientLayer()
   }
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
     if( sqrt( pow( (*it)->getPosition()[0]-(xExpected),2 ) + 
-	      pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= effDistanceCut ){
+	      pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= 100 ){
       return false;
     }
   }

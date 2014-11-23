@@ -25,7 +25,7 @@ class Cluster
 // 2D digital cluster
 {
  public:
-  Cluster(std::string decoder,std::string Kdecoder);
+  Cluster(int layID);
   ~Cluster(){;}
   void BuildHoughSpace();
   void buildClusterPosition();
@@ -42,14 +42,14 @@ class Cluster
   inline ThreeVector& getClusterPosition(){return clPos;}
   inline void setIsolation(bool isol){isolatedCluster=isol;}
   inline bool isIsolated(){return isolatedCluster;}
+  inline int getLayerID(){return layerID;}
   float rhox[tetamax];
   float rhoy[tetamax];
-  std::string HitDecoder;
-  std::string KDecoder;
  private:
   inline void setClusterPosition(ThreeVector position){clPos=position;}
   ClusterTag clusterTag;
   int clID;
+  int layerID;
   std::vector<EVENT::CalorimeterHit*> hits;
   ThreeVector clPos;
   bool isolatedCluster;

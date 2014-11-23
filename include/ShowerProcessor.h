@@ -80,8 +80,6 @@ class ShowerProcessor : public Processor {
    */
   virtual void end() ;
   
-  virtual void FindDeadCell();
-  virtual void RemoveDeadCell();
   virtual void makeHitMap();
   virtual void findEventTime(LCEvent* evt, LCCollection* col);
   virtual void findSpillEventTime(LCEvent* evt, LCCollection* col);
@@ -107,12 +105,6 @@ class ShowerProcessor : public Processor {
   std::vector<float> _thresholdHcal;
   std::string treeFileName_;
 
-  std::string decoder_;
-  std::string Idec;
-  std::string Jdec;
-  std::string Kdec;
-  std::string deadCellFile;
-
   std::string _mapFile;
   std::map<int,double> _effMap;
   std::map<int,double> _mulMap;
@@ -131,7 +123,6 @@ class ShowerProcessor : public Processor {
   std::map<int,EVENT::CalorimeterHit*> hitmap;
   std::vector<EVENT::CalorimeterHit*> calohit;
   std::vector<Shower*> theShowers;
-  std::vector<int> deadCellKey;
   //  std::vector<Layer*> layVec;
   int numElements;
   LCCollection * col;
@@ -152,7 +143,6 @@ class ShowerProcessor : public Processor {
   int nhough1;
   int nhough2;
   int nhough3;
-  int deadCellHit;
   int nlayer;
   int ninteractinglayer;
   int begin;

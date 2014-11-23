@@ -1,6 +1,7 @@
 #include "TrackingAlgo.h"
 #include "marlin/VerbosityLevels.h"
 #include <TPrincipal.h>
+#include <UTIL/CellIDDecoder.h>
 
 TrackingAlgo::TrackingAlgo()
 {
@@ -35,12 +36,13 @@ void TrackingAlgo::Init(std::vector<Cluster*>& clusterCollection)
 
 void TrackingAlgo::Init(std::vector<EVENT::CalorimeterHit*>& hitCollection)
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   hits=hitCollection;
   std::vector<EVENT::CalorimeterHit*> _temp;
   int ID=0;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=hitCollection.begin(); it!=hitCollection.end(); ++it){
     if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    Cluster *cl=new Cluster("M:3,S-1:3,I:9,J:9,K-1:6","K-1");
+    Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
     cl->AddHits(*it);
     ID+=1;
     _temp.push_back(*it);

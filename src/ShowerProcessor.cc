@@ -65,32 +65,6 @@ ShowerProcessor::ShowerProcessor() : Processor("ShowerProcessor") {
 			      energy_,
 			      (float) 0 ); 
 
-  
-  registerProcessorParameter( "Decoder" ,
-			      "Default decoder",
-			      decoder_,
-			      std::string("M:3,S-1:3,I:9,J:9,K-1:6"));
- 
-  registerProcessorParameter( "IDecoder" ,
-			      "My I Decoder",
-			      Idec,
-			      std::string("i"));
-
-  registerProcessorParameter( "JDecoder" ,
-			      "My J Decoder",
-			      Jdec,
-			      std::string("j"));
-
-  registerProcessorParameter( "KDecoder" ,
-			      "My K Decoder",
-			      Kdec,
-			      std::string("k-1"));
-
-  registerProcessorParameter( "deadCellFile" ,
-			      "file where dead cell are stored",
-			      deadCellFile,
-			      std::string("deadCell.txt"));
-
   registerProcessorParameter( "ShortAnalysis" ,
 			      "Short analysis option",
 			      NOT_FULL_ANALYSIS,
@@ -166,7 +140,6 @@ void ShowerProcessor::init()
   tree->Branch("Nhough1",&nhough1);
   tree->Branch("Nhough2",&nhough2);
   tree->Branch("Nhough3",&nhough3);
-  tree->Branch("DeadHitNumber",&deadCellHit);
   tree->Branch("Nlayer",&nlayer);
   tree->Branch("NInteractinglayer",&ninteractinglayer);
   tree->Branch("Begin",&begin);
@@ -263,10 +236,10 @@ std::vector<int> KeyToIJK(const int &key)
 
 void ShowerProcessor::makeHitMap()
 {
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder(decoder_.c_str());    
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    if(IDdecoder(*it)[Kdec.c_str()]>48)continue;
-    int key=IJKToKey(IDdecoder(*it)[Idec.c_str()],IDdecoder(*it)[Jdec.c_str()],IDdecoder(*it)[Kdec.c_str()]);
+    if(IDdecoder(*it)["K-1"]>48)continue;
+    int key=IJKToKey(IDdecoder(*it)["I"],IDdecoder(*it)["J"],IDdecoder(*it)["K-1"]);
     if(hitmap.find(key)!=hitmap.end())
       streamlog_out( DEBUG ) << key << " has been already found " << std::endl;
     hitmap[key]=(*it);
@@ -364,7 +337,7 @@ void ShowerProcessor::doShower()
 {
   singlePart=0;
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(decoder_.c_str());
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   Shower *shower=NULL;
 #ifdef ALL_HIT_IN_SHOWER
   //only one shower with all hits in selected time window
@@ -372,7 +345,7 @@ void ShowerProcessor::doShower()
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
     if(std::find(shower->getHits().begin(),shower->getHits().end(), (*it) )!=shower->getHits().end()) continue;
     shower->AddHits(*it);
-    if( idDecoder(*it)[Idec.c_str()]<=8 || idDecoder(*it)[Idec.c_str()]>=89 || idDecoder(*it)[Jdec.c_str()]<=8 || idDecoder(*it)[Jdec.c_str()]>=89 )
+    if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 )
       shower->getHits().pop_back();
   }
   theShowers.push_back(shower);
@@ -386,8 +359,8 @@ void ShowerProcessor::doShower()
     shower->BuildShower(_temp,calohit, (*it));
     std::sort(shower->getHits().begin(),shower->getHits().end(),
 	      ShowerClassFunction::sortShowerHitsByLayer);
-    shower->setFirstLayer(idDecoder(*(shower->getHits().begin()))[Kdec.c_str()]);
-    shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))[Kdec.c_str()]);
+    shower->setFirstLayer(idDecoder(*(shower->getHits().begin()))["K-1"]);
+    shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))["K-1"]);
     theShowers.push_back(shower);
   }
   std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
@@ -416,8 +389,8 @@ void ShowerProcessor::doShower()
     nshower=0;
     return;
   }
-  (*theShowers.begin())->setFirstLayer(idDecoder(*((*theShowers.begin())->getHits().begin()))[Kdec.c_str()]);
-  (*theShowers.begin())->setLastLayer(idDecoder(*((*theShowers.begin())->getHits().end()-1))[Kdec.c_str()]);
+  (*theShowers.begin())->setFirstLayer(idDecoder(*((*theShowers.begin())->getHits().begin()))["K-1"]);
+  (*theShowers.begin())->setLastLayer(idDecoder(*((*theShowers.begin())->getHits().end()-1))["K-1"]);
   ShowerAnalysis();
 
   nshower=0;
@@ -496,17 +469,17 @@ void ShowerProcessor::ShowerAnalysis()
       nhough1+=aTrackCaracteristics->ReturnTrackNhit()[1];
       nhough2+=aTrackCaracteristics->ReturnTrackNhit()[2];
       nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
-      if( (*jt)->getTrackStartingPoint().z()<=1 ){
-	std::vector<float> param=(*jt)->getTrackParameters();
-	ThreeVector px(-1,0,param[1]);
-	ThreeVector py(0,-1,param[3]);
-	ThreeVector pz(0,0,1);
-	_primaryTrackCosTheta=(px.cross(py)).cosTheta(pz);
-	streamlog_out( DEBUG ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
-			       << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
-			       << ", CHI2="  << (*jt)->getChi2() << std::endl;
-	streamlog_out( DEBUG ) << "primary track cosTheta = " << _primaryTrackCosTheta << std::endl;
-      }
+      //if( (*jt)->getTrackStartingPoint().z()<=1 ){
+      //	std::vector<float> param=(*jt)->getTrackParameters();
+      //	ThreeVector px(-1,0,param[1]);
+      //	ThreeVector py(0,-1,param[3]);
+      //	ThreeVector pz(0,0,1);
+      //	_primaryTrackCosTheta=(px.cross(py)).cosTheta(pz);
+      //	streamlog_out( DEBUG ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
+      //			       << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
+      //			       << ", CHI2="  << (*jt)->getChi2() << std::endl;
+      //	streamlog_out( DEBUG ) << "primary track cosTheta = " << _primaryTrackCosTheta << std::endl;
+      //}
 #ifdef SHOW_TRACKS
       streamlog_out( MESSAGE ) << ":Track between:\t" << aTrackCaracteristics->ReturnTrackFirstPoint()[2] << " ==> " << aTrackCaracteristics->ReturnTrackLastPoint()[2]
 			       << "\t:# Clusters:\t" << aTrackCaracteristics->ReturnTrackNumberOfClusters() << std::endl;
@@ -576,41 +549,6 @@ void ShowerProcessor::ShowerAnalysis()
   else nhitCorrected=nhit;
 }
 
-void ShowerProcessor::FindDeadCell()
-{
-  deadCellKey.clear();
-  fstream in;
-  in.open(deadCellFile.c_str(),ios::in);
-  int I=0; int J=0; int K=0;
-  // key=100000*k+100*j+i
-  // i=key%100;
-  // j=key/100%100;
-  // k=key/10000;
-  if(!in.is_open()) return;
-  while(!in.eof()){
-    in >> K >> I >> J;
-    deadCellKey.push_back(100*100*K+100*J+I);
-    streamlog_out( MESSAGE ) << deadCellKey.back() << std::endl;
-  }
-}
-
-void ShowerProcessor::RemoveDeadCell()
-{
-  int key=0;
-  deadCellHit=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder(decoder_.c_str());    
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    key=100*100*IDdecoder(*it)["K-1"]+100*IDdecoder(*it)["J"]+IDdecoder(*it)["I"];
-    if(std::find(deadCellKey.begin(), deadCellKey.end(), key)!=deadCellKey.end()){
-      deadCellHit++;
-      streamlog_out( DEBUG ) << IDdecoder(*it)["K-1"] << "\t" << IDdecoder(*it)["I"] << "\t" << IDdecoder(*it)["J"] << std::endl;
-      calohit.erase(it);
-      it--;
-    }
-  }
-  //if(deadCellHit>0) streamlog_out( MESSAGE )<< "dead cell number=" << deadCellHit << std::endl;
-}
-
 void ShowerProcessor::processRunHeader( LCRunHeader* run)
 {
   _nRun++ ;
@@ -633,10 +571,10 @@ void ShowerProcessor::processEvent( LCEvent * evt )
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
-      UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder(decoder_.c_str());    
+      UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
       for (int j=0; j < numElements; ++j) {
 	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
-	//if(IDdecoder(hit)[Kdec.c_str()]>=48)continue;
+	if(IDdecoder(hit)["K-1"]>=48)continue;
 	calohit.push_back(hit);
       }
       //      makeHitMap();

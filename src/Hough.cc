@@ -49,23 +49,13 @@ void Hough::ComputeHoughTransform()
       track->setHTParameters(par);
       track->setClusters(selectedBin.clusters);
       track->ComputeTrackParameters(true);
-      track->TrackStartingPoint();
-      track->TrackLastPoint();
       if( track->getChi2()>10 ) {delete track;continue;}
       track->AddClusters(this->getClusters());
       if( track->getChi2()>10 || track->getClusters().size()<=4 ) {delete track;continue;}
-      //    float *param=track->getTrackParameters();
-//streamlog_out( MESSAGE ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
-//			       << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
-//			       << ", CHI2="  << track->getChi2() << std::endl;
-//streamlog_out( MESSAGE ) << ":ThetaX:ThetaY:\t" << track->getTetax() << ":" << track->getTetay()
-//			       << "\t:Track between:\t" << track->getTrackStartingPoint()[2] << " ==> " << track->getTrackLastPoint()[2]
-//			       << "\t:# Clusters:\t" << track->getClusters().size() << std::endl;
       addTrack(track);
       for(std::vector<Cluster*>::iterator kt=track->getClusters().begin(); kt!=track->getClusters().end(); ++kt){
 	(*kt)->setClusterTag(fTrack);
       }
-      //std::cout << track->getTrackParameters() << std::endl;
     }
     hgSpaceZY.clear();
     RemoveTrackedClusters(hgSpaceZX);

@@ -46,11 +46,12 @@ void Shower::BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,
 
 void Shower::FindClustersInLayer()
 {
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   std::vector<EVENT::CalorimeterHit*> _temp;
   int ID=0;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
     if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    Cluster *cl=new Cluster("M:3,S-1:3,I:9,J:9,K-1:6","K-1");
+    Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
     cl->AddHits(*it);
     ID+=1;
     _temp.push_back(*it);
@@ -125,21 +126,23 @@ int Shower::FirstIntLayer()
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   if( getTracks().size()>0 ){
     for(std::vector<Track*>::iterator trackIt=getTracks().begin(); trackIt!=getTracks().end(); ++trackIt){
-      if( (*trackIt)->getTrackStartingPoint().z()<=2 ){
-	streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*trackIt)->getTrackStartingPoint().z() 
-			       << "\t finish at " << (*trackIt)->getTrackLastPoint().z() << std::endl;
+      if( (*trackIt)->getTrackStartingCluster()->getLayerID() <= 2 ){
+	streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*trackIt)->getTrackStartingCluster()->getLayerID() 
+			       << "\t finish at " << (*trackIt)->getTrackLastCluster()->getLayerID()  << std::endl;
 	std::vector<float> trackPar=(*trackIt)->getTrackParameters();
-	float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*trackIt)->getTrackStartingPoint().z();
-	float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*trackIt)->getTrackStartingPoint().z();
-      	float xbary_tr=trackPar[0]+trackPar[1]*(*trackIt)->getTrackStartingPoint().z();
-	float ybary_tr=trackPar[2]+trackPar[3]*(*trackIt)->getTrackStartingPoint().z();
+	float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
+	float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
+      	float xbary_tr=trackPar[0]+trackPar[1]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
+	float ybary_tr=trackPar[2]+trackPar[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
 	if( fabs( xbary_sh-xbary_tr )<10&&fabs( ybary_sh-ybary_tr )<10){
 	  streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
-	  begin=(int)(*trackIt)->getTrackLastPoint().z()+1;
+	  begin=(*trackIt)->getTrackLastCluster()->getLayerID()+1;
 	  bool ok=false;
 	  for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
-	    if( (*clit)->getClusterPosition().z()<begin || (*clit)->getClusterPosition().z()>begin+2 ) continue;
-	    if( fabs(xbary_sh-(*clit)->getClusterPosition().x())<10 && fabs(ybary_sh-(*clit)->getClusterPosition().y())<10 &&
+	    if( (*clit)->getLayerID()<begin || 
+		(*clit)->getLayerID()>begin+2 ) continue;
+	    if( fabs(xbary_sh-(*clit)->getClusterPosition().x())<100 && 
+		fabs(ybary_sh-(*clit)->getClusterPosition().y())<100 &&
 		(*clit)->getHits().size()>=4 && (*clit)->getClusterTag()!=fTrack ){
 	      ok=true;break;
 	    }
@@ -151,19 +154,15 @@ int Shower::FirstIntLayer()
 	  streamlog_out( DEBUG ) << "fabs( xbary_sh-xbary_tr ) = " << fabs( xbary_sh-xbary_tr ) << "\t" 
 				 << "fabs( ybary_sh-ybary_tr ) = " << fabs( ybary_sh-ybary_tr ) << std::endl;
       }
-      else streamlog_out( DEBUG ) << "track starting at " 
-				  << (*trackIt)->getTrackStartingPoint() << "\t" 
-				  << "track finishing at " 
-				  << (*trackIt)->getTrackLastPoint() << std::endl;
     }
   }
   for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
     float xbary=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getClusterPosition().z();
     float ybary=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getClusterPosition().z();
     if( (*it)->getHits().size()>=4 && (*it)->getClusterTag()!=fTrack &&
-	fabs(xbary-(*it)->getClusterPosition().x())<10&&
-	fabs(ybary-(*it)->getClusterPosition().y())<10 ){
-      begin=idDecoder( *(*it)->getHits().begin() )["K-1"];
+	fabs(xbary-(*it)->getClusterPosition().x())<100&&
+	fabs(ybary-(*it)->getClusterPosition().y())<100 ){
+      begin=(*it)->getLayerID()-1;
       break;
     }
   }
@@ -172,62 +171,63 @@ int Shower::FirstIntLayer()
 
 int Shower::TryAgainToFindShowerStartingLayer()
 {
-  int begin=-10;
-  streamlog_out( DEBUG ) << getTracks().size() << " tracks reconstructed" << std::endl;
-  for(std::vector<Track*>::iterator rino_track_et_it=getTracks().begin(); rino_track_et_it!=getTracks().end(); ++rino_track_et_it){
-    if( (*rino_track_et_it)->getTrackStartingPoint()[2]<=2 ){
-      streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*rino_track_et_it)->getTrackStartingPoint()[2] 
-			       << "\t finish at " << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
-      std::vector<float> trackPar=(*rino_track_et_it)->getTrackParameters();
-      float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
-      float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
-      float xbary_tr=trackPar[0]+trackPar[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
-      float ybary_tr=trackPar[2]+trackPar[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
-      if( fabs( xbary_sh-xbary_tr )<10&&fabs( ybary_sh-ybary_tr )<10){
-	streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
- 	begin=(int)(*rino_track_et_it)->getTrackLastPoint()[2]+1;
-	bool ok=false;
-	for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
-	  if( (*clit)->getClusterPosition().z()<begin || 
-	      (*clit)->getClusterPosition().z()>begin+2 ) continue;
-	  if( (*clit)->getHits().size()>=4 && 
-	      fabs(xbary_sh-(*clit)->getClusterPosition().x())<10&&
-	      fabs(ybary_sh-(*clit)->getClusterPosition().y())<10 ){
-	    ok=true;
-	    break;
-	  }
-	}
-	streamlog_out( DEBUG ) << "Shower starting point found with the end of a track at " << begin << std::endl;
-	return (begin==48||ok==false) ? -10 : begin;
-      }
-      else 
-	streamlog_out( DEBUG ) << "fabs( xbary_sh-xbary_tr ) = " << fabs( xbary_sh-xbary_tr ) << "\t" 
-				 << "fabs( ybary_sh-ybary_tr ) = " << fabs( ybary_sh-ybary_tr ) << std::endl;
-    }
-    else streamlog_out( DEBUG ) << "track starting at " 
-				  << (*rino_track_et_it)->getTrackStartingPoint()[0] << "," 
-				  << (*rino_track_et_it)->getTrackStartingPoint()[1] << "," 
-				  << (*rino_track_et_it)->getTrackStartingPoint()[2] << "\t"
-				  << "track finishing at " 
-				  << (*rino_track_et_it)->getTrackLastPoint()[0] << "," 
-				  << (*rino_track_et_it)->getTrackLastPoint()[1] << "," 
-				  << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
-  }
-  if(begin<0){
-    for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-      float xbary=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getClusterPosition().z();
-      float ybary=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getClusterPosition().z();
-      streamlog_out( DEBUG ) << "layer = " << (int)(*it)->getClusterPosition().z() << "; cluster size = " << (*it)->getHits().size() << std::endl;
-      if( (*it)->getHits().size()>4 && 
-	  fabs(xbary-(*it)->getClusterPosition().x())<10&&
-	  fabs(ybary-(*it)->getClusterPosition().y())<10 ){
-	begin=(int)(*it)->getClusterPosition().z();
-	streamlog_out( DEBUG ) << "Shower starting point found with cluster size at " << begin << std::endl;
-	return begin;
-      }
-    }
-  }
-  return begin;
+  return 0;
+//  int begin=-10;
+//  streamlog_out( DEBUG ) << getTracks().size() << " tracks reconstructed" << std::endl;
+//  for(std::vector<Track*>::iterator rino_track_et_it=getTracks().begin(); rino_track_et_it!=getTracks().end(); ++rino_track_et_it){
+//    if( (*rino_track_et_it)->getTrackStartingPoint()[2]<=2 ){
+//      streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*rino_track_et_it)->getTrackStartingPoint()[2] 
+//			       << "\t finish at " << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
+//      std::vector<float> trackPar=(*rino_track_et_it)->getTrackParameters();
+//      float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      float xbary_tr=trackPar[0]+trackPar[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      float ybary_tr=trackPar[2]+trackPar[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      if( fabs( xbary_sh-xbary_tr )<10&&fabs( ybary_sh-ybary_tr )<10){
+//	streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
+// 	begin=(int)(*rino_track_et_it)->getTrackLastPoint()[2]+1;
+//	bool ok=false;
+//	for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
+//	  if( (*clit)->getClusterPosition().z()<begin || 
+//	      (*clit)->getClusterPosition().z()>begin+2 ) continue;
+//	  if( (*clit)->getHits().size()>=4 && 
+//	      fabs(xbary_sh-(*clit)->getClusterPosition().x())<10&&
+//	      fabs(ybary_sh-(*clit)->getClusterPosition().y())<10 ){
+//	    ok=true;
+//	    break;
+//	  }
+//	}
+//	streamlog_out( DEBUG ) << "Shower starting point found with the end of a track at " << begin << std::endl;
+//	return (begin==48||ok==false) ? -10 : begin;
+//      }
+//      else 
+//	streamlog_out( DEBUG ) << "fabs( xbary_sh-xbary_tr ) = " << fabs( xbary_sh-xbary_tr ) << "\t" 
+//				 << "fabs( ybary_sh-ybary_tr ) = " << fabs( ybary_sh-ybary_tr ) << std::endl;
+//    }
+//    else streamlog_out( DEBUG ) << "track starting at " 
+//				  << (*rino_track_et_it)->getTrackStartingPoint()[0] << "," 
+//				  << (*rino_track_et_it)->getTrackStartingPoint()[1] << "," 
+//				  << (*rino_track_et_it)->getTrackStartingPoint()[2] << "\t"
+//				  << "track finishing at " 
+//				  << (*rino_track_et_it)->getTrackLastPoint()[0] << "," 
+//				  << (*rino_track_et_it)->getTrackLastPoint()[1] << "," 
+//				  << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
+//  }
+//  if(begin<0){
+//    for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+//      float xbary=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getClusterPosition().z();
+//      float ybary=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getClusterPosition().z();
+//      streamlog_out( DEBUG ) << "layer = " << (int)(*it)->getClusterPosition().z() << "; cluster size = " << (*it)->getHits().size() << std::endl;
+//      if( (*it)->getHits().size()>4 && 
+//	  fabs(xbary-(*it)->getClusterPosition().x())<10&&
+//	  fabs(ybary-(*it)->getClusterPosition().y())<10 ){
+//	begin=(int)(*it)->getClusterPosition().z();
+//	streamlog_out( DEBUG ) << "Shower starting point found with cluster size at " << begin << std::endl;
+//	return begin;
+//      }
+//    }
+//  }
+//  return begin;
 }
 
 void Shower::HitNumber()
@@ -615,7 +615,7 @@ std::vector<int> Shower::Density()
 	  fabs(idDecoder(*it)["K-1"]-idDecoder(*jt)["K-1"])<2 )
 	density.back()++;
     }
-    streamlog_out( DEBUG ) << idDecoder(*it)["I"] << " " << idDecoder(*it)["J"] << " " << idDecoder(*it)["K-1"] << "; denisty = " << density.back() << std::endl;
+    streamlog_out( DEBUG ) << idDecoder(*it)["I"] << " " << idDecoder(*it)["J"] << " " << idDecoder(*it)["K-1"] << "; density = " << density.back() << std::endl;
   }
   if(density.size()!=getHits().size())
     streamlog_out( MESSAGE ) << "PROBLEM : density size is " << density.size() << "\t nhit = " << getHits().size() << std::endl;
@@ -706,35 +706,38 @@ float Shower::TransverseRatio()
 
 void Shower::LayerProperties(bool DATA=true)
 {
-  std::cout << "void Shower::LayerProperties() is starting" << std::endl;
-  float eff[48];memset(eff,0,48*sizeof(float));
-  float mul[48];memset(mul,0,48*sizeof(float)); 
-  //float chi[48];memset(chi,0,48*sizeof(float)); 
-  int compt[48];memset(compt,0,48*sizeof(int));
-
-  std::vector<Cluster*> clusterShower;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-    if( (*it)->getClusterTag()!=fTrack )
-      clusterShower.push_back(*it);
-  }
-  std::cout << "void Shower::LayerProperties() is ok 1" << std::endl;
-  for(std::vector<Track*>::iterator track_et_it=getTracks().begin(); track_et_it!=getTracks().end(); ++track_et_it){
-    int trackBegin=(int)(*track_et_it)->getTrackStartingPoint().z()-1;
-    if(trackBegin<0)trackBegin=0;
-    int trackEnd=(int)(*track_et_it)->getTrackLastPoint().z();
-    if(trackEnd==46)trackEnd=47;
-    streamlog_out( MESSAGE  ) << "track begin = " << trackBegin << "\t"
-			      << "trackEnd  = " << trackEnd << std::endl;
-    for(int K=trackBegin; K<=trackEnd; K++){
-      LayerInShower* aLayer=new LayerInShower(K);
-      if(!DATA)
-	aLayer->setLayerZPosition( (K*26.131-625.213) );
-      std::cout << "LayerInShower* aLayer=new LayerInShower(K);" << std::endl;
-      aLayer->Init( (*track_et_it), clusterShower );
-      std::cout << "aLayer->Init( (*track_et_it), clusterShower );" << std::endl;
-      std::cout << "aLayer= :" << aLayer << std::endl;
-      aLayer->ComputeShowerLayerProperties();
-      delete aLayer;
-    }
-  }
+//  std::cout << "void Shower::LayerProperties() is starting" << std::endl;
+//  float eff[48];memset(eff,0,48*sizeof(float));
+//  float mul[48];memset(mul,0,48*sizeof(float)); 
+//  //float chi[48];memset(chi,0,48*sizeof(float)); 
+//  int compt[48];memset(compt,0,48*sizeof(int));
+//
+//  std::vector<Cluster*> clusterShower;
+//  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+//    if( (*it)->getClusterTag()!=fTrack )
+//      clusterShower.push_back(*it);
+//  }
+//  std::cout << "void Shower::LayerProperties() is ok 1" << std::endl;
+//  for(std::vector<Track*>::iterator track_et_it=getTracks().begin(); track_et_it!=getTracks().end(); ++track_et_it){
+//    int trackBegin=(int)(*track_et_it)->getTrackStartingPoint().z()-1;
+//    if(trackBegin<0)trackBegin=0;
+//    int trackEnd=(int)(*track_et_it)->getTrackLastPoint().z();
+//    if(trackEnd==46)trackEnd=47;
+//    streamlog_out( MESSAGE  ) << "track begin = " << trackBegin << "\t"
+//			      << "trackEnd  = " << trackEnd << std::endl;
+//    for(int K=trackBegin; K<=trackEnd; K++){
+//      LayerInShower* aLayer=new LayerInShower(K);
+//      if(!DATA){
+//	float edges[2];edges[0]=-490;edges[1]=510;
+//	aLayer->setLayerEdges(edges);
+//	aLayer->setLayerZPosition( (K*26.131-625.213) );
+//      }
+//      std::cout << "LayerInShower* aLayer=new LayerInShower(K);" << std::endl;
+//      aLayer->Init( (*track_et_it), clusterShower );
+//      std::cout << "aLayer->Init( (*track_et_it), clusterShower );" << std::endl;
+//      std::cout << "aLayer= :" << aLayer << std::endl;
+//      aLayer->ComputeShowerLayerProperties();
+//      delete aLayer;
+//    }
+//  }
 }

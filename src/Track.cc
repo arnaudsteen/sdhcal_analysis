@@ -28,6 +28,12 @@ Track::~Track()
   params.clear();
 }
 
+void Track::setClusters(std::vector<Cluster*> &vec)
+{
+  clusters=vec;
+  std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
+}
+
 void Track::ComputeTrackParameters(bool setParam)
 {
   std::vector<ThreeVector> vec;
@@ -54,39 +60,24 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
   std::vector<float> par=getTrackParameters();
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
     if( (*it)->getClusterTag()==fTrack
-	||((*it)->getClusterPosition().z()-getTrackStartingPoint()[2])<-2
-	||((*it)->getClusterPosition().z()-getTrackLastPoint()[2])>2
+	||((*it)->getClusterPosition().z()-getTrackStartingCluster()->getClusterPosition().z())<-2*26.131
+	||((*it)->getClusterPosition().z()-getTrackLastCluster()->getClusterPosition().z())>2*26.131
 	||std::find(getClusters().begin(), getClusters().end(), (*it))!=getClusters().end()
 	||std::find(getRejectedClusters().begin(),getRejectedClusters().end(),(*it))!=getRejectedClusters().end()
 	)continue;
-    if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*it)->getClusterPosition().z()+par[0]) )<2 &&
-	fabs( (*it)->getClusterPosition().y()-(par[3]*(*it)->getClusterPosition().z()+par[2]) )<2 ){
+    if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*it)->getClusterPosition().z()+par[0]) )<20 &&
+	fabs( (*it)->getClusterPosition().y()-(par[3]*(*it)->getClusterPosition().z()+par[2]) )<20 ){
       getClusters().push_back(*it);
-      TrackStartingPoint();
-      TrackLastPoint();
       ComputeTrackParameters(false);
       if(getChi2()>5){
 	getClusters().pop_back();
 	getRejectedClusters().push_back(*it);
-	TrackStartingPoint();
-	TrackLastPoint();
       }
       AddClusters(clVec);
+      std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
     }
   }
   ComputeTrackParameters(true);
-}
-
-void Track::TrackStartingPoint()
-{
-  std::sort(getClusters().begin(), getClusters().end(), ClusterClassFunction::sortDigitalClusterByLayer);
-  setTrackStartingPoint((*getClusters().begin())->getClusterPosition());
-}
-
-void Track::TrackLastPoint()
-{
-  std::sort(getClusters().begin(), getClusters().end(), ClusterClassFunction::sortDigitalClusterByLayer);
-  setTrackLastPoint( (*(getClusters().end()-1))->getClusterPosition() );
 }
 
 void Track::setHTParameters(float par[4])

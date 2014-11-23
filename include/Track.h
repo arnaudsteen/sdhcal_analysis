@@ -19,7 +19,7 @@ class Track
   void ComputeTrackParameters(bool setParam);
   void TrackStartingPoint();
   void TrackLastPoint();
-  inline void setClusters(std::vector<Cluster*> &clus){clusters=clus;}
+  void setClusters(std::vector<Cluster*> &clus);
   inline std::vector<Cluster*> &getClusters(){return clusters;}
   inline std::vector<EVENT::CalorimeterHit*>& getHits(){return hits;}
   inline void setHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits=hitVec;}
@@ -27,10 +27,8 @@ class Track
   inline std::vector<float> getTrackParameters(){return params;}
   inline void setChi2(float CHI2){chi2=CHI2;}
   inline float getChi2(){return chi2;}
-  inline void setTrackStartingPoint(ThreeVector pos){start=pos;}
-  inline ThreeVector& getTrackStartingPoint(){return start;}
-  inline void setTrackLastPoint(ThreeVector pos){last=pos;}
-  inline ThreeVector& getTrackLastPoint(){return last;}
+  inline Cluster* getTrackStartingCluster(){return (*clusters.begin());}
+  inline Cluster* getTrackLastCluster(){return (*(clusters.end()-1));}
 
 
  private:
@@ -39,8 +37,6 @@ class Track
   std::vector<Cluster*> clusters;
   float chi2;  
   std::vector<float> params;
-  ThreeVector start;
-  ThreeVector last;
 
  public : 
   //hough methods
