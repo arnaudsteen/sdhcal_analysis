@@ -30,7 +30,6 @@ using namespace std;
 
 #define ALL_HIT_IN_SHOWER
 //#define SHOW_TRACKS
-//#define SHOW_THE_SHOWER
 
 ShowerProcessor aShowerProcessor ;
 
@@ -394,27 +393,11 @@ void ShowerProcessor::doShower()
   ShowerAnalysis();
 
   nshower=0;
-#ifdef SHOW_THE_SHOWER
-  for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
-    (*it)->FindShowerBarycenter();
-    if( (*it)->getHits().size()>20 ) nshower++;
-    streamlog_out( MESSAGE ) << "find one shower with " << (*it)->getHits().size() 
-			     << " hits; starting at layer " << (*it)->getFirstLayer() 
-			     << " ; stopping at layer " << (*it)->getLastLayer() 
-			     << " ; barycenter = " << (*it)->getShowerBarycenter()[0] << ", " << (*it)->getShowerBarycenter()[1] << ", " << (*it)->getShowerBarycenter()[2]
-			     << " ; single Part??? " << singlePart
-			     << std::endl;
-    delete *it;
-  }
-  streamlog_out( MESSAGE ) << "Number of showers (more than 20 hits)=\t" << nshower << std::endl;  
-#endif
-#ifndef  SHOW_THE_SHOWER
   for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
     if( (*it)->getHits().size()>20 ) nshower++;
     delete *it;
   }
-#endif
-
+  fillTree();
 }
 
 void ShowerProcessor::ShowerAnalysis()
@@ -425,6 +408,7 @@ void ShowerProcessor::ShowerAnalysis()
   Shower* shower=(*theShowers.begin());
   shower->FindClustersInLayer();
   clusterIsolated=0;
+  nlayer=shower->Nlayer();
   for(std::vector<Cluster*>::iterator clit=shower->getClusters().begin(); clit!=shower->getClusters().end(); ++clit){
     (*clit)->IsolatedCluster(shower->getClusters());
     if( (*clit)->isIsolated() ){
@@ -589,14 +573,13 @@ void ShowerProcessor::processEvent( LCEvent * evt )
 	_incidentParticleCosTheta=_incidentParticleMomentum.cosTheta();
       }
       doShower();
-      fillTree();
     }
     catch(DataNotAvailableException &e){ 
       std::cout << "Exeption " << std::endl;
     }
   }
   _nEvt ++ ;
-  std::cout << "Event processed : " << _nEvt << std::endl;
+  std::cout << "Event processed : " << _nEvt << "\t event number = " << evt->getEventNumber() <<std::endl;
 }
 
 
