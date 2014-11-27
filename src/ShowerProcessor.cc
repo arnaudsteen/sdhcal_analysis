@@ -347,6 +347,7 @@ void ShowerProcessor::doShower()
     if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 )
       shower->getHits().pop_back();
   }
+  if( shower->getHits().size()==0 ){delete shower; return;}
   theShowers.push_back(shower);
 #endif 
 #ifndef ALL_HIT_IN_SHOWER
@@ -356,8 +357,7 @@ void ShowerProcessor::doShower()
     shower->AddHits(*it);
     _temp.push_back(*it);
     shower->BuildShower(_temp,calohit, (*it));
-    std::sort(shower->getHits().begin(),shower->getHits().end(),
-	      ShowerClassFunction::sortShowerHitsByLayer);
+    std::sort(shower->getHits().begin(),shower->getHits().end(),ShowerClassFunction::sortShowerHitsByLayer);
     shower->setFirstLayer(idDecoder(*(shower->getHits().begin()))["K-1"]);
     shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))["K-1"]);
     theShowers.push_back(shower);
@@ -453,17 +453,6 @@ void ShowerProcessor::ShowerAnalysis()
       nhough1+=aTrackCaracteristics->ReturnTrackNhit()[1];
       nhough2+=aTrackCaracteristics->ReturnTrackNhit()[2];
       nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
-      //if( (*jt)->getTrackStartingPoint().z()<=1 ){
-      //	std::vector<float> param=(*jt)->getTrackParameters();
-      //	ThreeVector px(-1,0,param[1]);
-      //	ThreeVector py(0,-1,param[3]);
-      //	ThreeVector pz(0,0,1);
-      //	_primaryTrackCosTheta=(px.cross(py)).cosTheta(pz);
-      //	streamlog_out( DEBUG ) << "(ZX) Track equation : " << param[1] << "*z + " << param[0] 
-      //			       << "(ZY) Track equation : " << param[3] << "*z + " << param[2] 
-      //			       << ", CHI2="  << (*jt)->getChi2() << std::endl;
-      //	streamlog_out( DEBUG ) << "primary track cosTheta = " << _primaryTrackCosTheta << std::endl;
-      //}
 #ifdef SHOW_TRACKS
       streamlog_out( MESSAGE ) << ":Track between:\t" << aTrackCaracteristics->ReturnTrackFirstPoint()[2] << " ==> " << aTrackCaracteristics->ReturnTrackLastPoint()[2]
 			       << "\t:# Clusters:\t" << aTrackCaracteristics->ReturnTrackNumberOfClusters() << std::endl;
@@ -484,15 +473,10 @@ void ShowerProcessor::ShowerAnalysis()
   nhit1=shower->getNumberOfHits()[1];
   nhit2=shower->getNumberOfHits()[2];
   nhit3=shower->getNumberOfHits()[3];
-  //nhitCorrected=shower->getNumberOfCorrectedHits()[0];
-  //nhitCorrected1=shower->getNumberOfCorrectedHits()[1];
-  //nhitCorrected2=shower->getNumberOfCorrectedHits()[2];
-  //nhitCorrected3=shower->getNumberOfCorrectedHits()[3];
   nlayer=shower->Nlayer();
   ninteractinglayer=shower->NInteractingLayer();
   shower->LongitudinalProfile(begin);
   shower->LongitudinalProfileBis();
-  //  shower->LongitudinalProfileCorrectedBis();
   shower->RadialProfile(begin);
   shower->ClusterRadialProfile();
   for(int i=0;i<48;i++){
@@ -579,7 +563,7 @@ void ShowerProcessor::processEvent( LCEvent * evt )
     }
   }
   _nEvt ++ ;
-  std::cout << "Event processed : " << _nEvt << "\t event number = " << evt->getEventNumber() <<std::endl;
+  std::cout << "Event processed : " << _nEvt <<std::endl;
 }
 
 

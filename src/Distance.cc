@@ -35,6 +35,25 @@ float DistanceBetweenTwoHits::CalculateDistance()
 
 //----------------------------------------------------------------------------------
 
+DistanceBetweenTwoClusters::DistanceBetweenTwoClusters() : Distance() , cluster1(0), cluster2(0)
+{}
+
+void DistanceBetweenTwoClusters::Init(Cluster* c1,Cluster* c2)
+{
+  cluster1=c1;
+  cluster2=c2;
+}
+
+float DistanceBetweenTwoClusters::CalculateDistance()
+{
+  ThreeVector AB(cluster1->getClusterPosition().x()-cluster2->getClusterPosition().x(),
+		 cluster1->getClusterPosition().y()-cluster2->getClusterPosition().y(),
+		 cluster1->getClusterPosition().z()-cluster2->getClusterPosition().z());
+  return AB.mag();
+}
+
+//----------------------------------------------------------------------------------
+
 DistanceBetweenOneHitAndOneCluster::DistanceBetweenOneHitAndOneCluster() : Distance() , hit(0), cluster(0)
 {}
 

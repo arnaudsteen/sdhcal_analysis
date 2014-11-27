@@ -8,6 +8,7 @@
 #include "marlin/VerbosityLevels.h"
 #include <algorithm>
 #include <cstring>
+#include "Distance.h"
 
 //extern const int tetamax;
 
@@ -58,15 +59,19 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
 //clVec is already composed of isolated cluster
 {
   std::vector<float> par=getTrackParameters();
+  DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
+  dist->Init(this);
+
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
     if( (*it)->getClusterTag()==fTrack
-	||((*it)->getClusterPosition().z()-getTrackStartingCluster()->getClusterPosition().z())<-2*26.131
-	||((*it)->getClusterPosition().z()-getTrackLastCluster()->getClusterPosition().z())>2*26.131
+	||fabs( (*it)->getLayerID()-getTrackStartingCluster()->getLayerID() )<2
+	||fabs( (*it)->getLayerID()-getTrackLastCluster()->getLayerID() )<2
 	||std::find(getClusters().begin(), getClusters().end(), (*it))!=getClusters().end()
 	||std::find(getRejectedClusters().begin(),getRejectedClusters().end(),(*it))!=getRejectedClusters().end()
 	)continue;
-    if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*it)->getClusterPosition().z()+par[0]) )<20 &&
-	fabs( (*it)->getClusterPosition().y()-(par[3]*(*it)->getClusterPosition().z()+par[2]) )<20 ){
+    if( dist->CalculateDistance(*it) < 20 ){
+    //if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*it)->getClusterPosition().z()+par[0]) )<20 &&
+    //  	fabs( (*it)->getClusterPosition().y()-(par[3]*(*it)->getClusterPosition().z()+par[2]) )<20 ){
       getClusters().push_back(*it);
       ComputeTrackParameters(false);
       if(getChi2()>5){
@@ -78,6 +83,7 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
     }
   }
   ComputeTrackParameters(true);
+  delete dist;
 }
 
 void Track::setHTParameters(float par[4])

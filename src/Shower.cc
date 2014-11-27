@@ -88,14 +88,6 @@ void Shower::FindShowerBarycenter()
     positions.push_back(t3pos);
     clSize.push_back(1);
   }
-  //for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
-  //  if( !(*clit)->isIsolated() ){
-  //    ThreeVector temp((*clit)->getClusterPosition().x(),(*clit)->getClusterPosition().y(),(*clit)->getClusterPosition().z()*2.6131);
-  //    positions.push_back( temp );
-  //    clSize.push_back( (*clit)->getHits().size() );
-  //  }
-  //}
-
   Linear3DFit* fit=new Linear3DFit(positions,clSize);
   fit->Fit();
   std::vector<float> par;
@@ -341,7 +333,6 @@ void Shower::LongitudinalProfileBis(bool show)
   }
   if(show){
     for(unsigned int k=0; k<48; k++){
-      //if(longiProfileBis[k]<0||longiProfileBis[k]>1000)
       streamlog_out( MESSAGE ) << "PROFILEBIS => :layer:\t" << k << "\t :nhit:\t" << longiProfileBis[k] << std::endl;
     } 
   }
@@ -351,9 +342,9 @@ void Shower::LongitudinalProfileCorrectedBis(bool show)
 {
   memset(longiProfileCorrectedBis,0,48*sizeof(double));
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(unsigned int k=0; k<48; k++){
+  for(int k=0; k<48; k++){
     for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-      if((*it)->getClusterPosition().z()!=k)continue;
+      if((*it)->getLayerID()!=k)continue;
       int asicKey=findAsicKey(*it);
       longiProfileCorrectedBis[k]+=(*it)->getHits().size()*meanMultiplicity/_mulMap[asicKey];
     }
@@ -390,9 +381,9 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
   distMinus->Init(trackMinus);
 
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    int bin=int(dist->CalculateDistance(*it));
-    int binPlus=int(distPlus->CalculateDistance(*it));
-    int binMinus=int(distMinus->CalculateDistance(*it));
+    int bin=(int)round(dist->CalculateDistance(*it)/10.05);
+    int binPlus=(int)round(distPlus->CalculateDistance(*it)/10.05);
+    int binMinus=(int)round(distMinus->CalculateDistance(*it)/10.05);
     if(bin<96)
       radialProfile[bin]++;
     else continue;
@@ -439,7 +430,7 @@ float Shower::FirstLayerClusterRatio()
 {
   float ratio=0;
   for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-    if( (*it)->getClusterPosition().z()<15)
+    if( (*it)->getLayerID()<15)
       ratio++;
   }
   return ratio/getClusters().size();
@@ -450,8 +441,8 @@ float Shower::CentralHitRatio()
 {
   float ratio=0;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    if(fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])<3&&
-       fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])<3)
+    if(fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])<30&&
+       fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])<30)
       ratio++;
   }
   return ratio/getHits().size();
@@ -459,18 +450,9 @@ float Shower::CentralHitRatio()
 
 int Shower::NeutralShower()
 {
-  int count=0;
-  std::vector<int> IJK;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-    if( (*it)->getClusterPosition().z()>5 ) break;
-    if((*it)->getClusterPosition().x()>=8&&(*it)->getClusterPosition().x()<=88&&
-       (*it)->getClusterPosition().y()>=8&&(*it)->getClusterPosition().y()<=88)
-      count++;
-  }
-  if(count<4){
-    streamlog_out( DEBUG ) << " one neutral particle : " << std::endl;
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
+  if( (*getClusters().begin())->getLayerID()>4 )
     return 1;
-  }
   else return 0;
 }
 
@@ -484,8 +466,8 @@ int Shower::holeFinder(int begin)
     if(k>48) continue;
     for(std::vector<EVENT::CalorimeterHit*>::iterator hit=getHits().begin(); hit!=getHits().end(); ++hit){
       if(idDecoder(*hit)["K-1"]==k &&
-	 fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*hit)->getPosition()[2]-(*hit)->getPosition()[0])<10 &&
-	 fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*hit)->getPosition()[2]-(*hit)->getPosition()[1])<10 ) {nhit++;break;}
+	 fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*hit)->getPosition()[2]-(*hit)->getPosition()[0])<100 &&
+	 fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*hit)->getPosition()[2]-(*hit)->getPosition()[1])<100 ) {nhit++;break;}
     }
     if(nhit==0) hole++;
   }
@@ -572,7 +554,7 @@ int Shower::FirstLayerRMS()
 			     ClusterClassFunction::removeClusterAfterFifthLayer),
 	      clVec.end());
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    int k=(int)(*it)->getClusterPosition().z();
+    int k=(int)(*it)->getLayerID();
     if(k>=5) {streamlog_out( MESSAGE ) << "Remaining Cluster " << (*it) << "; in layer" << k << std::endl; return -10;}
     nclus[k]+=(*it)->getHits().size();
     xm[k]+=(*it)->getClusterPosition().x()*(*it)->getHits().size();
@@ -585,7 +567,7 @@ int Shower::FirstLayerRMS()
     }
   }
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    int k=(int)(*it)->getClusterPosition().z();
+    int k=(*it)->getLayerID();
     if(nclus[k]==0) {rms[k]=0; continue;}
     rms[k]+=(*it)->getHits().size()*( (xm[k]-(*it)->getClusterPosition().x())*(xm[k]-(*it)->getClusterPosition().x()) +
 				      (ym[k]-(*it)->getClusterPosition().y())*(ym[k]-(*it)->getClusterPosition().y()) );
@@ -593,7 +575,7 @@ int Shower::FirstLayerRMS()
   int count=0;
   for(int k=0; k<5; k++){
     if(nclus[k]>0)rms[k]=sqrt(rms[k]/nclus[k]);
-    if(rms[k]>5) count++;
+    if(rms[k]>50) count++;
   }
   if(count<4) return 1;
   for(int k=0; k<5; k++){
@@ -662,9 +644,9 @@ int Shower::findAsicKey(EVENT::CalorimeterHit* hit)
 
 int Shower::findAsicKey(Cluster* cluster)
 {
-  int I=(int)cluster->getClusterPosition().x();
-  int J=(int)cluster->getClusterPosition().y();
-  int K=(int)cluster->getClusterPosition().z();
+  int I=(int)round(cluster->getClusterPosition().x()/10.05);
+  int J=(int)round(cluster->getClusterPosition().y()/10.05);
+  int K=(int)cluster->getLayerID();
   if(I>96||I<0||J>96||J<0) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;
@@ -691,12 +673,6 @@ float Shower::TransverseRatio()
   pca->CheckConsistency();
   pca->Execute();
   TVectorD eigenVal=pca->GetEigenValues();
-  
-  //Not used yet
-  //TMatrixD eigenVec=pca->GetEigenVectors();
-  //ThreeVector v0(eigenVec(0,0),eigenVec(1,0),eigenVec(2,0));
-  //ThreeVector v1(eigenVec(0,1),eigenVec(1,1),eigenVec(2,1));
-  //ThreeVector v2(eigenVec(0,2),eigenVec(1,2),eigenVec(2,2));
   
   transverseRatio = sqrt(eigenVal[1]*eigenVal[1]+eigenVal[2]*eigenVal[2])/eigenVal[0] ;
   pca->End();

@@ -60,17 +60,17 @@ void Cluster::IsolationCriterion(std::vector<Cluster*> &clVec)
     float x=(*jt)->getClusterPosition().x();
     float y=(*jt)->getClusterPosition().y();
     float z=(*jt)->getClusterPosition().z();
-    if(fabs(X-x)<5 &&
-       fabs(Y-y)<5 &&
+    if(fabs(X-x)<50 &&
+       fabs(Y-y)<50 &&
        Z==z) 
       neighbour++;
-    if(fabs(X-x)<5 &&
-       fabs(Y-y)<5 &&
+    if(fabs(X-x)<50 &&
+       fabs(Y-y)<50 &&
        Z==z&&(*jt)->getHits().size()>4) 
       big_neighbour++;
-    if(Z!=z && fabs(Z-z)<3 &&
-       fabs(X-x)<10 &&
-       fabs(Y-y)<10)
+    if(Z!=z && fabs(Z-z)<3*26.131 &&
+       fabs(X-x)<100 &&
+       fabs(Y-y)<100)
       neighbourbis++;
     //if(Z!=z && fabs(Z-z)<3 &&
     //   fabs(X-x)<5 &&
@@ -87,8 +87,8 @@ void Cluster::BuildHoughSpace()
 {  
   const double PI = 3.14159265358979312e+00;
   for(int ith=0; ith<tetamax; ith++){
-    this->rhox[ith]=fabs(this->getClusterPosition().z()*cos(-PI/2+ith*PI/tetamax)+this->getClusterPosition().x()*sin(-PI/2+ith*PI/tetamax));
-    this->rhoy[ith]=fabs(this->getClusterPosition().z()*cos(-PI/2+ith*PI/tetamax)+this->getClusterPosition().y()*sin(-PI/2+ith*PI/tetamax));
+    this->rhox[ith]=(this->getClusterPosition().z()*cos(-PI/2+ith*PI/tetamax)+this->getClusterPosition().x()*sin(-PI/2+ith*PI/tetamax))/10.05;
+    this->rhoy[ith]=(this->getClusterPosition().z()*cos(-PI/2+ith*PI/tetamax)+this->getClusterPosition().y()*sin(-PI/2+ith*PI/tetamax))/10.05;
   }
 }
 

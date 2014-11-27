@@ -114,6 +114,6 @@ class ClusterClassFunction{
   static bool AnalogBigCluster(Analog_Cluster* &cluster){return cluster->getHits().size()>=5;}
   static bool sortClusterByLayer(Analog_Cluster* cl1, Analog_Cluster* cl2){return cl1->getClusterPosition().z()<cl2->getClusterPosition().z();}
   static bool sortDigitalClusterByLayer(Cluster* cl1, Cluster* cl2){return cl1->getClusterPosition().z()<cl2->getClusterPosition().z();}
-  static bool removeClusterAfterFifthLayer(Cluster* cluster){return cluster->getClusterPosition().z()>=5;}
+  static bool removeClusterAfterFifthLayer(Cluster* cluster){return cluster->getLayerID()>=5;}
 };
 #endif

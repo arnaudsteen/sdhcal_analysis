@@ -8,6 +8,7 @@
 #include "Cluster.h"
 #include "Track.h"
 #include "HoughPoint.h"
+#include "Distance.h"
 
 static const unsigned int cutValue=6;
 

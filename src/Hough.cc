@@ -49,9 +49,9 @@ void Hough::ComputeHoughTransform()
       track->setHTParameters(par);
       track->setClusters(selectedBin.clusters);
       track->ComputeTrackParameters(true);
-      if( track->getChi2()>10 ) {delete track;continue;}
+      if( track->getChi2()>5 ) {delete track;continue;}
       track->AddClusters(this->getClusters());
-      if( track->getChi2()>10 || track->getClusters().size()<=4 ) {delete track;continue;}
+      if( track->getChi2()>5 || track->getClusters().size()<=4 ) {delete track;continue;}
       addTrack(track);
       for(std::vector<Cluster*>::iterator kt=track->getClusters().begin(); kt!=track->getClusters().end(); ++kt){
 	(*kt)->setClusterTag(fTrack);
@@ -74,9 +74,7 @@ std::vector<HoughBin> Hough::getHoughSpace(std::vector<Cluster*> &clVec,bool zxP
       bool append=false;
       if(zxPlan){
 	for(std::vector<HoughBin>::iterator jt=hgVec.begin(); jt!=hgVec.end(); ++jt){
-	  if(ith==(*jt).theta && 
-	     int(round((*it)->rhox[ith]))==(*jt).rho
-	     ){
+	  if(ith==(*jt).theta && fabs((int)round((*jt).rho)-(int)round((*it)->rhox[ith]))<=1 ){
 	    (*jt).clusters.push_back(*it);
 	    append=true;
 	    break;
@@ -92,9 +90,7 @@ std::vector<HoughBin> Hough::getHoughSpace(std::vector<Cluster*> &clVec,bool zxP
       }
       else{
 	for(std::vector<HoughBin>::iterator jt=hgVec.begin(); jt!=hgVec.end(); ++jt){
-	  if(ith==(*jt).theta && 
-	     int(round((*it)->rhoy[ith]))==(*jt).rho
-	     ){
+	  if(ith==(*jt).theta && fabs((int)round((*jt).rho)-(int)round((*it)->rhoy[ith]))<=1 ){
 	    (*jt).clusters.push_back(*it);
 	    append=true;
 	    break;
@@ -134,7 +130,7 @@ void Hough::RemoveTrackedClusters(std::vector<HoughBin> &hBinVec)
 
 void Hough::RemoveIsolatedClusters(std::vector<Cluster*> &clVec)
 {
-  bool isol=true;
+  bool isol;
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
     int count=0;
     if( (*it)->getClusterTag()==fTrack ){
@@ -143,11 +139,12 @@ void Hough::RemoveIsolatedClusters(std::vector<Cluster*> &clVec)
       --it;
       continue;
     }
+    isol=true;
     for(std::vector<Cluster*>::iterator jt=clVec.begin(); jt!=clVec.end(); ++jt){
       if( (*it)==(*jt) ) continue;
-      if( fabs((*it)->getClusterPosition().z()-(*jt)->getClusterPosition().z())<3 &&
-	  fabs((*it)->getClusterPosition().y()-(*jt)->getClusterPosition().y())<10 &&
-	  fabs((*it)->getClusterPosition().x()-(*jt)->getClusterPosition().x())<10 ){
+      if( fabs((*it)->getLayerID()-(*jt)->getLayerID())<=3 ){//&&
+	//fabs((*it)->getClusterPosition().y()-(*jt)->getClusterPosition().y())<100 &&
+	//	  fabs((*it)->getClusterPosition().x()-(*jt)->getClusterPosition().x())<100 ){
 	count++;
       }
       if(count>=2) {isol=false; break;}

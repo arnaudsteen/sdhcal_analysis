@@ -77,17 +77,17 @@ class DistanceBetweenOneHitAndOneTrack : public Distance
   float normU;
 };
 
-//class DistanceBetweenTwoClusters : public Distance
-//{
-// public : 
-//  DistanceBetweenTwoClusters();
-//  ~DistanceBetweenOneHitsAndOneCluster(){;}
-//  void Init(Cluster *cl1,Cluster *cl2);
-//  float CalculateDistance();
-// protected : 
-//  Cluster* cluster1;
-//  Cluster* cluster2;
-//};
+class DistanceBetweenTwoClusters : public Distance
+{
+ public : 
+  DistanceBetweenTwoClusters();
+  ~DistanceBetweenTwoClusters(){;}
+  void Init(Cluster *cl1,Cluster *cl2);
+  float CalculateDistance();
+ protected : 
+  Cluster* cluster1;
+  Cluster* cluster2;
+};
 
 //class DistanceBetweenTwoTracks : public Distance
 //{
