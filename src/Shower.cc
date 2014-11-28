@@ -18,11 +18,8 @@ Shower::~Shower()
   hits.clear();
   clusters.clear();
   Nhit.clear();
-  _nhitCorrected.clear();
   showerBarycenter.clear();  
   showerBarycenterError.clear();  
-  //_effMap.clear();
-  //_mulMap.clear();
   delete showerAxe;
 }
 
@@ -338,26 +335,6 @@ void Shower::LongitudinalProfileBis(bool show)
   }
 }
 
-void Shower::LongitudinalProfileCorrectedBis(bool show)
-{
-  memset(longiProfileCorrectedBis,0,48*sizeof(double));
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(int k=0; k<48; k++){
-    for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-      if((*it)->getLayerID()!=k)continue;
-      int asicKey=findAsicKey(*it);
-      longiProfileCorrectedBis[k]+=(*it)->getHits().size()*meanMultiplicity/_mulMap[asicKey];
-    }
-  }
-  if(show){
-    for(unsigned int k=0; k<48; k++){
-      streamlog_out( MESSAGE ) << "PROFILEBIS => :layer:\t" << k << "\t"
-			       << " :nhit:\t" << longiProfileBis[k] << "\t" 
-			       << " :nhitcorrected:\t" << longiProfileCorrectedBis[k] << std::endl;
-    } 
-  }
-}
-
 void Shower::RadialProfile(int firstIntLayer,bool show)
 {
   memset(radialProfile,0,96*sizeof(int));
@@ -602,20 +579,6 @@ std::vector<int> Shower::Density()
   if(density.size()!=getHits().size())
     streamlog_out( MESSAGE ) << "PROBLEM : density size is " << density.size() << "\t nhit = " << getHits().size() << std::endl;
   return density;
-}
-
-float Shower::CorrectedNumberOfHits()
-{
-  float nhit=0.f;
-  for(std::vector<Cluster*>::iterator clIt=getClusters().begin(); clIt!=getClusters().end(); ++clIt){
-    if( (*clIt)->getHits().size()>10 ) 
-      nhit+=(*clIt)->getHits().size();
-    else{
-      int asicKey=findAsicKey(*clIt);
-      nhit+=(*clIt)->getHits().size()*meanMultiplicity/_mulMap[asicKey];
-    }
-  }
-  return nhit;
 }
 
 int Shower::findAsicKey(const int layer,const float *par)

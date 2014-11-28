@@ -105,9 +105,6 @@ class ShowerProcessor : public Processor {
   std::vector<float> _thresholdHcal;
   std::string treeFileName_;
 
-  std::string _mapFile;
-  std::map<int,double> _effMap;
-  std::map<int,double> _mulMap;
   float _meanMultiplicity;
   float _meanEfficiency;
   
@@ -136,10 +133,6 @@ class ShowerProcessor : public Processor {
   int nhit1;
   int nhit2;
   int nhit3;
-  float nhitCorrected;
-  float nhitCorrected1;
-  float nhitCorrected2;
-  float nhitCorrected3;
   int nhough1;
   int nhough2;
   int nhough3;

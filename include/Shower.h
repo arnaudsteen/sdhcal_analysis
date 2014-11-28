@@ -33,7 +33,6 @@ class Shower
   float Radius(int begin);
   void LongitudinalProfile(int& Zbegin,bool show=false); //relative to shower starting layer
   void LongitudinalProfileBis(bool show=false); //relative to calorimeter front
-  void LongitudinalProfileCorrectedBis(bool show=false); //relative to calorimeter front
   void RadialProfile(int firstIntLayer, bool show=false);
   void ClusterRadialProfile(bool show=false);
   float FirstLayerClusterRatio();
@@ -52,7 +51,6 @@ class Shower
   int findAsicKey(Cluster* cluster);
   float TransverseRatio();
   int TryAgainToFindShowerStartingLayer();
-  float CorrectedNumberOfHits();
   void LayerProperties(bool DATA);
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
@@ -79,14 +77,7 @@ class Shower
   inline int* getRadialProfileBis(){return radialProfileBis;}
   inline int* getRadialProfilePlus(){return radialProfilePlus;}
   inline int* getRadialProfileMinus(){return radialProfileMinus;}
-  inline double* getLongiProfileCorrectedBis(){return longiProfileCorrectedBis;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
-  inline void setEfficiencyMap(std::map<int,double> &map){_effMap=map;}
-  inline void setMultiplicityMap(std::map<int,double> &map){_mulMap=map;}
-  inline void setMeanEfficiency(float val){meanEfficiency=val;}
-  inline void setMeanMultiplicity(float val){meanMultiplicity=val;}
-  inline void setNumberOfCorrectedHits(std::vector<int> nhit){_nhitCorrected=nhit;}
-  inline std::vector<int>& getNumberOfCorrectedHits(){return _nhitCorrected;}
 
  private:
   int shID;
@@ -97,7 +88,6 @@ class Shower
   std::vector<float> showerBarycenterError;
   int longiProfile[48];//relative to shower starting layer
   int longiProfileBis[48];//relative to calorimeter front
-  double longiProfileCorrectedBis[48];//relative to calorimeter front
   int radialProfile[96];
   int radialProfilePlus[96]; //same as radialProfile with showerAxe shifted (+sigma)
   int radialProfileMinus[96]; //same as radialProfile with showerAxe shifted (-sigma)
@@ -106,11 +96,6 @@ class Shower
   int firstLayer;
   int lastLayer;
   std::vector<int> Nhit;
-  std::vector<int> _nhitCorrected;
-  std::map<int,double> _effMap;
-  std::map<int,double> _mulMap;
-  float meanMultiplicity;
-  float meanEfficiency;
   float transverseRatio;
   Track* showerAxe;
 };

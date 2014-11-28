@@ -74,11 +74,6 @@ ShowerProcessor::ShowerProcessor() : Processor("ShowerProcessor") {
 			      DATA,
 			      false);
 
-  registerProcessorParameter( "MapFile" ,
-			      "file where efficiency and multiplicity map is stored",
-			      _mapFile,
-			      std::string("Map.txt") ); 
-
   registerProcessorParameter( "MeanMultiplicity" ,
 			      "mean value of sdhcal asic multiplicity",
 			      _meanMultiplicity,
@@ -132,10 +127,6 @@ void ShowerProcessor::init()
   tree->Branch("Nhit1",&nhit1);
   tree->Branch("Nhit2",&nhit2);
   tree->Branch("Nhit3",&nhit3);
-  tree->Branch("NhitCorrected",&nhitCorrected);
-  tree->Branch("NhitCorrected1",&nhitCorrected1);
-  tree->Branch("NhitCorrected2",&nhitCorrected2);
-  tree->Branch("NhitCorrected3",&nhitCorrected3);
   tree->Branch("Nhough1",&nhough1);
   tree->Branch("Nhough2",&nhough2);
   tree->Branch("Nhough3",&nhough3);
@@ -190,15 +181,6 @@ void ShowerProcessor::init()
   _prevBCID=0;
   _bcidRef=0;
 
-  MapReader* mapreader=new MapReader();
-  mapreader->SetFileToRead(_mapFile);
-  mapreader->ReadFileAndBuildMaps();
-  _effMap=mapreader->getEfficiencyMap();
-  _mulMap=mapreader->getMultiplicityMap();
-  delete mapreader;
-  _meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
-  streamlog_out( MESSAGE ) << "_meanEfficiency = " << _meanEfficiency << "\t"
-			   << "_meanMultiplicity = " << _meanMultiplicity << std::endl;
 }
 
 void ShowerProcessor::ClearVector()
@@ -423,10 +405,10 @@ void ShowerProcessor::ShowerAnalysis()
     if(shower->getShowerBarycenter()[i]!=shower->getShowerBarycenter()[i]) {begin=-5;return;}
   }
   std::vector<Cluster*> isolClusVec=shower->getIsolatedClusters();
-  shower->setEfficiencyMap(_effMap);
-  shower->setMeanEfficiency(_meanEfficiency);
-  shower->setMultiplicityMap(_mulMap);
-  shower->setMeanMultiplicity(_meanMultiplicity);
+  //shower->setEfficiencyMap(_effMap);
+  //shower->setMeanEfficiency(_meanEfficiency);
+  //shower->setMultiplicityMap(_mulMap);
+  //shower->setMeanMultiplicity(_meanMultiplicity);
   if(!NOT_FULL_ANALYSIS){
     Hough *hough = new Hough();
     hough->Init( isolClusVec );
@@ -511,10 +493,6 @@ void ShowerProcessor::ShowerAnalysis()
   meanClusterSize=shower->MeanClusterSize(); 
   singlePart=shower->FirstLayerRMS();
   transverseRatio=shower->TransverseRatio();
-  if(_mulMap.size()!=0){
-    nhitCorrected=shower->CorrectedNumberOfHits();
-  }
-  else nhitCorrected=nhit;
 }
 
 void ShowerProcessor::processRunHeader( LCRunHeader* run)
