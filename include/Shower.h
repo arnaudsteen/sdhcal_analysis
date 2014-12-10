@@ -78,6 +78,7 @@ class Shower
   inline int* getRadialProfilePlus(){return radialProfilePlus;}
   inline int* getRadialProfileMinus(){return radialProfileMinus;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
+  inline Track* getShowerAxe(){return showerAxe;}
 
  private:
   int shID;

@@ -50,6 +50,8 @@ void Track::ComputeTrackParameters(bool setParam)
   for(int i=0; i<4; i++)
     par.push_back(fit->GetFitParameters()[i]);
   setChi2(fit->GetChi2());
+  if( getChi2()!=getChi2() )
+    setChi2(100000);
   if(setParam)
     setTrackParameters(par);
   delete fit;
@@ -59,6 +61,10 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
 //clVec is already composed of isolated cluster
 {
   std::vector<float> par=getTrackParameters();
+  if( getTrackParameters()[1]!=getTrackParameters()[1] || getTrackParameters()[3]!=getTrackParameters()[3] )
+    {
+      std::cout << getTrackParameters()[1] << " " << getTrackParameters()[3] << " " << getChi2() << std::endl;
+    }
   DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
   dist->Init(this);
 

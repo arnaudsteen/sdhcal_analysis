@@ -17,6 +17,7 @@ Shower::~Shower()
     delete *it;
   hits.clear();
   clusters.clear();
+  tracks.clear();
   Nhit.clear();
   showerBarycenter.clear();  
   showerBarycenterError.clear();  
@@ -344,7 +345,6 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   DistanceBetweenOneHitAndOneTrack* dist=new DistanceBetweenOneHitAndOneTrack();
   dist->Init(showerAxe);
-  
   DistanceBetweenOneHitAndOneTrack* distPlus=new DistanceBetweenOneHitAndOneTrack();
   Track *trackPlus=new Track();
   std::vector<float> parPlus;for(int i=0;i<4;i++){parPlus.push_back(getShowerBarycenter()[i]+2*getShowerBarycenterError()[i]);}
@@ -384,9 +384,9 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
 
 void Shower::ClusterRadialProfile(bool show)
 {
-  memset(clusterRadialProfile,0,96*sizeof(int));
   DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
   dist->Init(showerAxe);
+  memset(clusterRadialProfile,0,96*sizeof(int));
   for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
     int bin=int(dist->CalculateDistance(*it));
     if(bin<96){
@@ -495,7 +495,6 @@ int Shower::Edge()
   }
   return edge;
 }
-
 
 int Shower::ClusterEMNumber()
 {

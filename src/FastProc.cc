@@ -68,27 +68,6 @@ FastProc::FastProc() : Processor("FastProc") {
 			      energy_,
 			      (float) 0 ); 
 
-  
-  registerProcessorParameter( "Decoder" ,
-			      "Default decoder",
-			      decoder_,
-			      std::string("M:3,S-1:3,I:9,J:9,K-1:6"));
- 
-  registerProcessorParameter( "IDecoder" ,
-			      "My I Decoder",
-			      Idec,
-			      std::string("i"));
-
-  registerProcessorParameter( "JDecoder" ,
-			      "My J Decoder",
-			      Jdec,
-			      std::string("j"));
-
-  registerProcessorParameter( "KDecoder" ,
-			      "My K Decoder",
-			      Kdec,
-			      std::string("k-1"));
-
   std::vector<float> thresholdHcal;
   thresholdHcal.push_back(0.114);
   thresholdHcal.push_back(5.0);
@@ -160,7 +139,7 @@ void FastProc::fillTree()
 void FastProc::doShower()
 {
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder(decoder_.c_str());
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   Shower *shower=NULL;
   shower=new Shower();
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
@@ -172,8 +151,8 @@ void FastProc::doShower()
   for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it)
     std::sort( (*it)->getHits().begin(), (*it)->getHits().end(), ShowerClassFunction::sortShowerHitsByLayer);
   std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
-  (*theShowers.begin())->setFirstLayer(idDecoder(*((*theShowers.begin())->getHits().begin()))[Kdec.c_str()]);
-  (*theShowers.begin())->setLastLayer(idDecoder(*((*theShowers.begin())->getHits().end()-1))[Kdec.c_str()]);
+  (*theShowers.begin())->setFirstLayer(idDecoder(*((*theShowers.begin())->getHits().begin()))["K-1"]);
+  (*theShowers.begin())->setLastLayer(idDecoder(*((*theShowers.begin())->getHits().end()-1))["K-1"]);
   ShowerAnalysis();
   
   for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
@@ -186,10 +165,12 @@ void FastProc::ShowerAnalysis()
   Shower* shower=(*theShowers.begin());
   shower->FindClustersInLayer();
   shower->FindShowerBarycenter();
+  begin=shower->FirstIntLayer();
+  shower->RadialProfile(begin);
+  shower->ClusterRadialProfile();
   HitNumber(shower); //can not use Shower::HitNumber because here analog hits
   nlayer=shower->Nlayer();
   ninteractinglayer=shower->NInteractingLayer();
-    begin=shower->FirstIntLayer();
   for(int i=0;i<4;i++)
     cog[i]=shower->getShowerBarycenter()[i];
   centralRatio=shower->CentralHitRatio();
@@ -239,10 +220,10 @@ void FastProc::processEvent( LCEvent * evt )
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
-      UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder(decoder_.c_str());    
+      UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
       for (int j=0; j < numElements; ++j) {
 	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
-	if(IDdecoder(hit)[Kdec.c_str()]>=48)continue;
+	if(IDdecoder(hit)["K-1"]>=48)continue;
 	calohit.push_back(hit);
       }
       doShower();

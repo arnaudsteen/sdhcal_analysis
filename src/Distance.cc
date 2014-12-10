@@ -1,5 +1,6 @@
 #include "Distance.h"
 #include <cmath>
+#include "marlin/VerbosityLevels.h"
 
 ThreeVector Distance::VectorProduct(ThreeVector vec1, ThreeVector vec2)
 {
@@ -104,7 +105,9 @@ float DistanceBetweenOneClusterAndOneTrack::CalculateDistance(Cluster* cluster)
   if(normU>0)
     return (BC.cross(u)).mag()/normU;
   else{
-    std::cout << "ORIENTATION VECTOR u IS NULL => should return exception" << std::endl;
+    std::cout << "ORIENTATION VECTOR u IS NULL => should return exception (cluster and track)" << std::endl;
+    std::cout << "aPataTrack->getTrackParameters()[1] = " << aPataTrack->getTrackParameters()[1] 
+    	      << "\t aPataTrack->getTrackParameters()[3] = " << aPataTrack->getTrackParameters()[3] << std::endl;
     return 0;
   }
 }
@@ -142,7 +145,10 @@ float DistanceBetweenOneHitAndOneTrack::CalculateDistance(EVENT::CalorimeterHit*
   if(normU>0)
     return (BH.cross(u)).mag()/normU;
   else{
-    std::cout << "ORIENTATION VECTOR u IS NULL => should return exception" << std::endl;
+    streamlog_out( MESSAGE ) << "ORIENTATION VECTOR u IS NULL => should return exception (hit and track)" << std::endl;
+    streamlog_out( MESSAGE ) << "DistanceBetweenOneHitAndOneTrack::CalculateDistance==>\t"
+			     << aPataTrack->getTrackParameters()[1] << "\t"
+			     << aPataTrack->getTrackParameters()[3] << std::endl;
     return 0;
   }
 }

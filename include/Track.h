@@ -23,8 +23,8 @@ class Track
   inline std::vector<Cluster*> &getClusters(){return clusters;}
   inline std::vector<EVENT::CalorimeterHit*>& getHits(){return hits;}
   inline void setHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits=hitVec;}
-  inline void setTrackParameters(std::vector<float> par){ params=par; }
-  inline std::vector<float> getTrackParameters(){return params;}
+  inline void setTrackParameters(std::vector<float> &par){ params=par; }
+  inline std::vector<float> &getTrackParameters(){return params;}
   inline void setChi2(float CHI2){chi2=CHI2;}
   inline float getChi2(){return chi2;}
   inline Cluster* getTrackStartingCluster(){return (*clusters.begin());}

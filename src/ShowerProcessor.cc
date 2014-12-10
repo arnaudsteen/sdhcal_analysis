@@ -177,7 +177,7 @@ void ShowerProcessor::init()
   memset(radialProfilePlus,0,96*sizeof(int));
   memset(radialProfileMinus,0,96*sizeof(int));
 
-  _timeCut = 20*pow(10.0,9); //20 sec
+  _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
   _bcidRef=0;
 
@@ -317,70 +317,124 @@ void ShowerProcessor::findSpillEventTime(LCEvent* evt,LCCollection* col)
 void ShowerProcessor::doShower()
 {
   singlePart=0;
-  std::vector<EVENT::CalorimeterHit*> _temp;
+  nshower=0;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  Shower *shower=NULL;
-#ifdef ALL_HIT_IN_SHOWER
-  //only one shower with all hits in selected time window
-  shower=new Shower();
+  std::vector<EVENT::CalorimeterHit*> temp;
+  temp.clear();
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    if(std::find(shower->getHits().begin(),shower->getHits().end(), (*it) )!=shower->getHits().end()) continue;
-    shower->AddHits(*it);
     if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 )
-      shower->getHits().pop_back();
+      continue;
+    if(std::find(temp.begin(),temp.end(), (*it) )!=temp.end()) continue;
+    temp.push_back(*it);
   }
-  if( shower->getHits().size()==0 ){delete shower; return;}
-  theShowers.push_back(shower);
-#endif 
-#ifndef ALL_HIT_IN_SHOWER
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    shower=new Shower();
-    shower->AddHits(*it);
-    _temp.push_back(*it);
-    shower->BuildShower(_temp,calohit, (*it));
-    std::sort(shower->getHits().begin(),shower->getHits().end(),ShowerClassFunction::sortShowerHitsByLayer);
-    shower->setFirstLayer(idDecoder(*(shower->getHits().begin()))["K-1"]);
-    shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))["K-1"]);
-    theShowers.push_back(shower);
-  }
-  std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
-  for(std::vector<Shower*>::iterator it=theShowers.begin()+1; it!=theShowers.end(); ++it){
-    if((*it)->getHits().size()>20) continue;
-    (*it)->FindShowerBarycenter();
-    std::vector<float> bary=(*it)->getShowerBarycenter();
-    if( bary[0]<6 || bary[0]>91 || bary[1]<6 || bary[1]>91 )continue;
-    else {
-      (*theShowers.begin())->AddHits( (*it)->getHits() );
-      delete *it;
-      theShowers.erase(it);
-      it--;
-    }
-  }
-  streamlog_out( DEBUG ) << "vector of showers is built" << std::endl;
-#endif
-
-  for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it)
-    std::sort( (*it)->getHits().begin(), (*it)->getHits().end(), ShowerClassFunction::sortShowerHitsByLayer);
-  std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
-  if( (*theShowers.begin())->getHits().size()<5 ){
-    for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
-      delete *it;
-    }
-    nshower=0;
+  if(temp.size()<5){
+    streamlog_out( MESSAGE ) << "BAD SHOWER EVENT" << std::endl;
     return;
   }
-  (*theShowers.begin())->setFirstLayer(idDecoder(*((*theShowers.begin())->getHits().begin()))["K-1"]);
-  (*theShowers.begin())->setLastLayer(idDecoder(*((*theShowers.begin())->getHits().end()-1))["K-1"]);
-  ShowerAnalysis();
-
-  nshower=0;
-  for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
-    if( (*it)->getHits().size()>20 ) nshower++;
-    delete *it;
+  nshower=1;
+  Shower* shower=new Shower();
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=temp.begin(); it!=temp.end(); ++it){
+    shower->AddHits(*it);
   }
+  //temp.clear();
+  theShowers.push_back(shower);
+  ShowerAnalysis();
   fillTree();
+  delete shower;
 }
+
+
+//void ShowerProcessor::doShower()
+//{
+//  singlePart=0;
+//  nshower=0;
+//  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
+//  Shower *shower=NULL;
+//#ifdef ALL_HIT_IN_SHOWER
+//  //only one shower with all hits in selected time window
+//  shower=new Shower();
+//  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
+//    //std::cout << "start if" << std::endl;
+//    //if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 ){
+//    //  continue;
+//    //  std::cout << "removing one hit" << std::endl;
+//    //}
+//    //std::cout << "end if" << std::endl;
+//    if(std::find(shower->getHits().begin(),shower->getHits().end(), (*it) )!=shower->getHits().end()) continue;
+//    shower->AddHits(*it);
+//  }
+//  if( shower->getHits().size()<5 ){delete shower; return;}
+//  std::sort( shower->getHits().begin(), shower->getHits().end(), ShowerClassFunction::sortShowerHitsByLayer);
+//  shower->setFirstLayer(idDecoder(*shower->getHits().begin())["K-1"]);
+//  shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))["K-1"]);
+//  nshower=1;
+//  theShowers.push_back(shower);
+//#endif 
+//#ifndef ALL_HIT_IN_SHOWER
+//  std::vector<EVENT::CalorimeterHit*> _temp;
+//  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
+//    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
+//    shower=new Shower();
+//    shower->AddHits(*it);
+//    _temp.push_back(*it);
+//    shower->BuildShower(_temp,calohit, (*it));
+//    std::sort(shower->getHits().begin(),shower->getHits().end(),ShowerClassFunction::sortShowerHitsByLayer);
+//    shower->setFirstLayer(idDecoder(*(shower->getHits().begin()))["K-1"]);
+//    shower->setLastLayer(idDecoder(*(shower->getHits().end()-1))["K-1"]);
+//    theShowers.push_back(shower);
+//  }
+//  std::sort(theShowers.begin(), theShowers.end(), ShowerClassFunction::sortShowersBySize);
+//  for(std::vector<Shower*>::iterator it=theShowers.begin()+1; it!=theShowers.end(); ++it){
+//    if((*it)->getHits().size()>20) continue;
+//    (*it)->FindShowerBarycenter();
+//    std::vector<float> bary=(*it)->getShowerBarycenter();
+//    if( bary[0]<6 || bary[0]>91 || bary[1]<6 || bary[1]>91 )continue;
+//    else {
+//      (*theShowers.begin())->AddHits( (*it)->getHits() );
+//      delete *it;
+//      theShowers.erase(it);
+//      it--;
+//    }
+//  }
+//  if( (*theShowers.begin())->getHits().size()<10 ){
+//    for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
+//      delete *it;
+//    }
+//    nshower=0;
+//    return;
+//  }
+//  for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
+//    if( (*it)->getHits().size()>20 ) nshower++;
+//    delete *it;
+//  }
+//  streamlog_out( DEBUG ) << "vector of showers is built" << std::endl;
+//#endif
+//  for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
+//    for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
+//      //std::cout << "start if" << std::endl;
+//      if( idDecoder(*jt)["I"]<=8 || idDecoder(*jt)["I"]>=89 || idDecoder(*jt)["J"]<=8 || idDecoder(*jt)["J"]>=89 ){
+//  	(*it)->getHits().erase(jt);
+//  	jt--;
+//  	std::cout << "removing one hit" << std::endl;
+//      }
+//    }
+//    std::cout << (*it)->getHits().size() << std::endl; 
+//    if( (*it)->getHits().size()<5 ){
+//      delete (*it);
+//      std::cout << "delete ok" << std::endl;
+//    }
+//  }
+//    //std::cout << "end if" << std::endl;
+//
+//  ShowerAnalysis();
+//  if(theShowers.size()>0){
+//    for(std::vector<Shower*>::iterator it=theShowers.begin(); it!=theShowers.end(); ++it){
+//      delete *it;
+//      std::cout << "delete ok" << std::endl;
+//    }
+//    fillTree();
+//  }
+//}
 
 void ShowerProcessor::ShowerAnalysis()
 {
@@ -402,7 +456,11 @@ void ShowerProcessor::ShowerAnalysis()
   shower->FindShowerBarycenter();
   for(int i=0;i<4;i++){
     //find nan problem
-    if(shower->getShowerBarycenter()[i]!=shower->getShowerBarycenter()[i]) {begin=-5;return;}
+    if(shower->getShowerAxe()->getTrackParameters()[i]!=shower->getShowerAxe()->getTrackParameters()[i]) {
+      begin=-5;
+      std::cout << i << " " << shower->getShowerAxe()->getTrackParameters()[i]<<"!="<<shower->getShowerAxe()->getTrackParameters()[i] << std::endl;
+      return;
+    }
   }
   std::vector<Cluster*> isolClusVec=shower->getIsolatedClusters();
   //shower->setEfficiencyMap(_effMap);
@@ -437,7 +495,7 @@ void ShowerProcessor::ShowerAnalysis()
       nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
 #ifdef SHOW_TRACKS
       streamlog_out( MESSAGE ) << ":Track between:\t" << aTrackCaracteristics->ReturnTrackFirstPoint()[2] << " ==> " << aTrackCaracteristics->ReturnTrackLastPoint()[2]
-			       << "\t:# Clusters:\t" << aTrackCaracteristics->ReturnTrackNumberOfClusters() << std::endl;
+    			       << "\t:# Clusters:\t" << aTrackCaracteristics->ReturnTrackNumberOfClusters() << std::endl;
 #endif
       delete aTrackCaracteristics;
     }
@@ -459,8 +517,8 @@ void ShowerProcessor::ShowerAnalysis()
   ninteractinglayer=shower->NInteractingLayer();
   shower->LongitudinalProfile(begin);
   shower->LongitudinalProfileBis();
-  shower->RadialProfile(begin);
   shower->ClusterRadialProfile();
+  shower->RadialProfile(begin);
   for(int i=0;i<48;i++){
     longiProfile[i]=shower->getLongiProfile()[i];
     longiProfile_bis[i]=(int)round(shower->getLongiProfileBis()[i]);
@@ -516,6 +574,10 @@ void ShowerProcessor::processEvent( LCEvent * evt )
       col = evt->getCollection( _hcalCollections[i].c_str() ) ;
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
+      if(numElements>4000){
+	streamlog_out( WARNING ) << "noise event has been found" << std::endl;
+	continue;
+      }
       UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
       UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
       for (int j=0; j < numElements; ++j) {
