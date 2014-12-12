@@ -8,7 +8,7 @@
 #include <cstring>
 #include <vector>
 #include "Cluster.h"
-#include "Track.h"
+//#include "Track.h"
 #include "ThreeVector.hh"
 
 class Distance
@@ -50,10 +50,10 @@ class DistanceBetweenOneClusterAndOneTrack : public Distance
  public : 
   DistanceBetweenOneClusterAndOneTrack();
   ~DistanceBetweenOneClusterAndOneTrack(){;}
-  void Init(Track* trk);
+  void Init(std::vector<float> &params);
   float CalculateDistance(Cluster* cluster);
  protected :
-  Track* aPataTrack;
+  std::vector<float> trackParams;
   ThreeVector Nx; //plan 
   ThreeVector Ny;
   ThreeVector u;
@@ -66,10 +66,10 @@ class DistanceBetweenOneHitAndOneTrack : public Distance
  public : 
   DistanceBetweenOneHitAndOneTrack();
   ~DistanceBetweenOneHitAndOneTrack(){;}
-  void Init(Track* trk);
+  void Init(std::vector<float> &params);
   float CalculateDistance(EVENT::CalorimeterHit* hit);
  protected :
-  Track* aPataTrack;
+  std::vector<float> trackParams;
   ThreeVector Nx; //plan 
   ThreeVector Ny;
   ThreeVector u;

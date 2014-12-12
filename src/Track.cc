@@ -66,7 +66,7 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
       std::cout << getTrackParameters()[1] << " " << getTrackParameters()[3] << " " << getChi2() << std::endl;
     }
   DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
-  dist->Init(this);
+  dist->Init(this->getTrackParameters());
 
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
     if( (*it)->getClusterTag()==fTrack

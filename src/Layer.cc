@@ -105,7 +105,7 @@ void Layer::ComputeLayerProperties()
       return;
     }
     DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
-    dist->Init(aTrack);
+    dist->Init(aTrack->getTrackParameters());
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
@@ -118,7 +118,7 @@ void Layer::ComputeLayerProperties()
     }
     delete dist;
     DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
-    distHit->Init(aTrack);
+    distHit->Init(aTrack->getTrackParameters());
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
       if( distHit->CalculateDistance(*it) < effDistanceCut ){
 	this->setLayerTag(fEfficientLayer);
@@ -254,7 +254,7 @@ void LayerInShower::ComputeShowerLayerProperties()
       return;
     }
     DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
-    dist->Init(aTrack);
+    dist->Init(aTrack->getTrackParameters());
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
@@ -267,7 +267,7 @@ void LayerInShower::ComputeShowerLayerProperties()
     }
     delete dist;
     DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
-    distHit->Init(aTrack);
+    distHit->Init(aTrack->getTrackParameters());
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
       if( distHit->CalculateDistance(*it) < effDistanceCut ){
 	this->setLayerTag(fEfficientLayer);

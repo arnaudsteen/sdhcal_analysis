@@ -140,8 +140,8 @@ void ShowerProcessor::init()
   tree->Branch("RadialProfile",&radialProfile,"RadialProfile[96]/I");
   tree->Branch("ClusterRadialProfile",&clusterRadialProfile,"ClusterRadialProfile[96]/I");
   tree->Branch("RadialProfileBis",&radialProfileBis,"RadialProfileBis[96]/I");
-  tree->Branch("RadialProfilePlus",&radialProfilePlus,"RadialProfilePlus[96]/I");
-  tree->Branch("RadialProfileMinus",&radialProfileMinus,"RadialProfileMinus[96]/I");
+  //tree->Branch("RadialProfilePlus",&radialProfilePlus,"RadialProfilePlus[96]/I");
+  //tree->Branch("RadialProfileMinus",&radialProfileMinus,"RadialProfileMinus[96]/I");
   tree->Branch("MaxRadius",&maxradius);
   tree->Branch("Lasthit",&nlastplan);
   tree->Branch("Hole",&hole);
@@ -174,8 +174,8 @@ void ShowerProcessor::init()
   memset(longiProfile_bis,0,48*sizeof(int));
   memset(radialProfile,0,96*sizeof(int));
   memset(radialProfileBis,0,96*sizeof(int));
-  memset(radialProfilePlus,0,96*sizeof(int));
-  memset(radialProfileMinus,0,96*sizeof(int));
+  //memset(radialProfilePlus,0,96*sizeof(int));
+  //memset(radialProfileMinus,0,96*sizeof(int));
 
   _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
@@ -456,9 +456,9 @@ void ShowerProcessor::ShowerAnalysis()
   shower->FindShowerBarycenter();
   for(int i=0;i<4;i++){
     //find nan problem
-    if(shower->getShowerAxe()->getTrackParameters()[i]!=shower->getShowerAxe()->getTrackParameters()[i]) {
+    if(shower->getShowerBarycenter()[i]!=shower->getShowerBarycenter()[i]) {
       begin=-5;
-      std::cout << i << " " << shower->getShowerAxe()->getTrackParameters()[i]<<"!="<<shower->getShowerAxe()->getTrackParameters()[i] << std::endl;
+      std::cout << i << " " << shower->getShowerBarycenter()[i]<<"!="<<shower->getShowerBarycenter()[i] << std::endl;
       return;
     }
   }
@@ -528,10 +528,10 @@ void ShowerProcessor::ShowerAnalysis()
     clusterRadialProfile[48+i]=shower->getClusterRadialProfile()[48+i];
     radialProfileBis[i]=shower->getRadialProfileBis()[i];
     radialProfileBis[48+i]=shower->getRadialProfileBis()[48+i];
-    radialProfilePlus[i]=shower->getRadialProfilePlus()[i];
-    radialProfilePlus[48+i]=shower->getRadialProfilePlus()[48+i];
-    radialProfileMinus[i]=shower->getRadialProfileMinus()[i];
-    radialProfileMinus[48+i]=shower->getRadialProfileMinus()[48+i];
+    //radialProfilePlus[i]=shower->getRadialProfilePlus()[i];
+    //radialProfilePlus[48+i]=shower->getRadialProfilePlus()[48+i];
+    //radialProfileMinus[i]=shower->getRadialProfileMinus()[i];
+    //radialProfileMinus[48+i]=shower->getRadialProfileMinus()[48+i];
   }
   hole=shower->holeFinder(begin);
   for(int i=0;i<4;i++)

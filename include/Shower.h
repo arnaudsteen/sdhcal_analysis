@@ -20,7 +20,7 @@ const float dCut=15.0;
 class Shower
 {
  public:
-  Shower(){showerAxe=NULL;}
+  Shower();
   ~Shower();
   void BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,std::vector<EVENT::CalorimeterHit*> &calohit,EVENT::CalorimeterHit* &hit);
   void FindClustersInLayer();
@@ -75,10 +75,9 @@ class Shower
   inline int* getClusterRadialProfile(){return clusterRadialProfile;}
   inline int* getLongiProfileBis(){return longiProfileBis;}
   inline int* getRadialProfileBis(){return radialProfileBis;}
-  inline int* getRadialProfilePlus(){return radialProfilePlus;}
-  inline int* getRadialProfileMinus(){return radialProfileMinus;}
+  //inline int* getRadialProfilePlus(){return radialProfilePlus;}
+  //inline int* getRadialProfileMinus(){return radialProfileMinus;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
-  inline Track* getShowerAxe(){return showerAxe;}
 
  private:
   int shID;
@@ -90,15 +89,14 @@ class Shower
   int longiProfile[48];//relative to shower starting layer
   int longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
-  int radialProfilePlus[96]; //same as radialProfile with showerAxe shifted (+sigma)
-  int radialProfileMinus[96]; //same as radialProfile with showerAxe shifted (-sigma)
+  //int radialProfilePlus[96]; //same as radialProfile with showerbarycenter shifted (+sigma)
+  //int radialProfileMinus[96]; //same as radialProfile with showerbarycenter shifted (-sigma)
   int radialProfileBis[96];//primary track not include if any
   int clusterRadialProfile[96];
   int firstLayer;
   int lastLayer;
   std::vector<int> Nhit;
   float transverseRatio;
-  Track* showerAxe;
 };
 
 class ShowerClassFunction{

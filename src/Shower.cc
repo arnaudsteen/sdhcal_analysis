@@ -9,11 +9,18 @@
 #include "marlin/VerbosityLevels.h"
 #include <string.h>
 
+Shower::Shower()
+{
+  Nhit.reserve(4);
+  showerBarycenter.reserve(4);
+  showerBarycenterError.reserve(4);
+}
+
 Shower::~Shower()
 {
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it)
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
     delete *it;
-  for(std::vector<Track*>::iterator it=getTracks().begin(); it!=getTracks().end(); ++it)
+  for(std::vector<Track*>::iterator it=tracks.begin(); it!=tracks.end(); ++it)
     delete *it;
   hits.clear();
   clusters.clear();
@@ -21,7 +28,6 @@ Shower::~Shower()
   Nhit.clear();
   showerBarycenter.clear();  
   showerBarycenterError.clear();  
-  delete showerAxe;
 }
 
 void Shower::BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,
@@ -47,29 +53,29 @@ void Shower::FindClustersInLayer()
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
   std::vector<EVENT::CalorimeterHit*> _temp;
   int ID=0;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
     Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
     cl->AddHits(*it);
     ID+=1;
     _temp.push_back(*it);
-    cl->BuildCluster(_temp,getHits(), (*it));
+    cl->BuildCluster(_temp,hits, (*it));
     cl->buildClusterPosition();
     cl->setClusterID(ID);
-    getClusters().push_back(cl);
+    clusters.push_back(cl);
   }
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-    (*it)->IsolationCriterion(getClusters());
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    (*it)->IsolationCriterion(clusters);
     if((*it)->getClusterTag()==fMip)
       (*it)->BuildHoughSpace();
   }
-  std::sort(this->getClusters().begin(), this->getClusters().end(), ClusterClassFunction::sortDigitalClusterByLayer);
+  std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
 }
 
 std::vector<Cluster*> Shower::getIsolatedClusters()
 {
   std::vector<Cluster*> vec;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if((*it)->getClusterTag()==fMip)
       vec.push_back(*it);
   }
@@ -78,10 +84,10 @@ std::vector<Cluster*> Shower::getIsolatedClusters()
 
 void Shower::FindShowerBarycenter()
 {
-  //  unsigned int n=this->getHits().size();
+  //  unsigned int n=this->hits.size();
   std::vector<ThreeVector> positions;
   std::vector<int> clSize;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     ThreeVector t3pos( (*it)->getPosition()[0],(*it)->getPosition()[1],(*it)->getPosition()[2] );
     positions.push_back(t3pos);
     clSize.push_back(1);
@@ -96,16 +102,14 @@ void Shower::FindShowerBarycenter()
   }
   streamlog_out( DEBUG ) << " x=az+b \t a = " << fit->GetFitParameters()[1] << " +- " << fit->GetFitParError()[1] << "\t b = " << fit->GetFitParameters()[0] << " +- " << fit->GetFitParError()[0] << "\n"
 			 << " y=cz+d \t c = " << fit->GetFitParameters()[3] << " +- " << fit->GetFitParError()[3] << "\t d = " << fit->GetFitParameters()[2] << " +- " << fit->GetFitParError()[2] << std::endl;
-  showerAxe=new Track();
-  showerAxe->setTrackParameters(par);
   delete fit;
   this->setShowerBarycenter(par);
   this->setShowerBarycenterError(err);
   streamlog_out( DEBUG ) << "shower barycenter :\t" 
-			 << "(" << getShowerBarycenter()[0] 
-			 << "," << getShowerBarycenter()[1]
-			 << "," << getShowerBarycenter()[2]
-			 << "," << getShowerBarycenter()[3]
+			 << "(" << showerBarycenter[0] 
+			 << "," << showerBarycenter[1]
+			 << "," << showerBarycenter[2]
+			 << "," << showerBarycenter[3]
 			 << ")" << std::endl;
 }
 
@@ -114,21 +118,21 @@ int Shower::FirstIntLayer()
 {
   int begin=-10;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  if( getTracks().size()>0 ){
-    for(std::vector<Track*>::iterator trackIt=getTracks().begin(); trackIt!=getTracks().end(); ++trackIt){
+  if( tracks.size()>0 ){
+    for(std::vector<Track*>::iterator trackIt=tracks.begin(); trackIt!=tracks.end(); ++trackIt){
       if( (*trackIt)->getTrackStartingCluster()->getLayerID() <= 2 ){
 	streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*trackIt)->getTrackStartingCluster()->getLayerID() 
 			       << "\t finish at " << (*trackIt)->getTrackLastCluster()->getLayerID()  << std::endl;
 	std::vector<float> trackPar=(*trackIt)->getTrackParameters();
-	float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
-	float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
+	float xbary_sh=showerBarycenter[0]+showerBarycenter[1]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
+	float ybary_sh=showerBarycenter[2]+showerBarycenter[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
       	float xbary_tr=trackPar[0]+trackPar[1]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
 	float ybary_tr=trackPar[2]+trackPar[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
 	if( fabs( xbary_sh-xbary_tr )<10&&fabs( ybary_sh-ybary_tr )<10){
 	  streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
 	  begin=(*trackIt)->getTrackLastCluster()->getLayerID()+1;
 	  bool ok=false;
-	  for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
+	  for(std::vector<Cluster*>::iterator clit=clusters.begin(); clit!=clusters.end(); ++clit){
 	    if( (*clit)->getLayerID()<begin || 
 		(*clit)->getLayerID()>begin+2 ) continue;
 	    if( fabs(xbary_sh-(*clit)->getClusterPosition().x())<100 && 
@@ -146,9 +150,9 @@ int Shower::FirstIntLayer()
       }
     }
   }
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-    float xbary=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getClusterPosition().z();
-    float ybary=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getClusterPosition().z();
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    float xbary=showerBarycenter[0]+showerBarycenter[1]*(*it)->getClusterPosition().z();
+    float ybary=showerBarycenter[2]+showerBarycenter[3]*(*it)->getClusterPosition().z();
     if( (*it)->getHits().size()>=4 && (*it)->getClusterTag()!=fTrack &&
 	fabs(xbary-(*it)->getClusterPosition().x())<100&&
 	fabs(ybary-(*it)->getClusterPosition().y())<100 ){
@@ -163,21 +167,21 @@ int Shower::TryAgainToFindShowerStartingLayer()
 {
   return 0;
 //  int begin=-10;
-//  streamlog_out( DEBUG ) << getTracks().size() << " tracks reconstructed" << std::endl;
-//  for(std::vector<Track*>::iterator rino_track_et_it=getTracks().begin(); rino_track_et_it!=getTracks().end(); ++rino_track_et_it){
+//  streamlog_out( DEBUG ) << tracks.size() << " tracks reconstructed" << std::endl;
+//  for(std::vector<Track*>::iterator rino_track_et_it=tracks.begin(); rino_track_et_it!=tracks.end(); ++rino_track_et_it){
 //    if( (*rino_track_et_it)->getTrackStartingPoint()[2]<=2 ){
 //      streamlog_out( DEBUG ) << "Find one track candidate for shower starting layer : start at " << (*rino_track_et_it)->getTrackStartingPoint()[2] 
 //			       << "\t finish at " << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
 //      std::vector<float> trackPar=(*rino_track_et_it)->getTrackParameters();
-//      float xbary_sh=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
-//      float ybary_sh=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      float xbary_sh=showerBarycenter[0]+showerBarycenter[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
+//      float ybary_sh=showerBarycenter[2]+showerBarycenter[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
 //      float xbary_tr=trackPar[0]+trackPar[1]*(*rino_track_et_it)->getTrackStartingPoint()[2];
 //      float ybary_tr=trackPar[2]+trackPar[3]*(*rino_track_et_it)->getTrackStartingPoint()[2];
 //      if( fabs( xbary_sh-xbary_tr )<10&&fabs( ybary_sh-ybary_tr )<10){
 //	streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
 // 	begin=(int)(*rino_track_et_it)->getTrackLastPoint()[2]+1;
 //	bool ok=false;
-//	for(std::vector<Cluster*>::iterator clit=getClusters().begin(); clit!=getClusters().end(); ++clit){
+//	for(std::vector<Cluster*>::iterator clit=clusters.begin(); clit!=clusters.end(); ++clit){
 //	  if( (*clit)->getClusterPosition().z()<begin || 
 //	      (*clit)->getClusterPosition().z()>begin+2 ) continue;
 //	  if( (*clit)->getHits().size()>=4 && 
@@ -204,9 +208,9 @@ int Shower::TryAgainToFindShowerStartingLayer()
 //				  << (*rino_track_et_it)->getTrackLastPoint()[2] << std::endl;
 //  }
 //  if(begin<0){
-//    for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
-//      float xbary=getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getClusterPosition().z();
-//      float ybary=getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getClusterPosition().z();
+//    for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+//      float xbary=showerBarycenter[0]+showerBarycenter[1]*(*it)->getClusterPosition().z();
+//      float ybary=showerBarycenter[2]+showerBarycenter[3]*(*it)->getClusterPosition().z();
 //      streamlog_out( DEBUG ) << "layer = " << (int)(*it)->getClusterPosition().z() << "; cluster size = " << (*it)->getHits().size() << std::endl;
 //      if( (*it)->getHits().size()>4 && 
 //	  fabs(xbary-(*it)->getClusterPosition().x())<10&&
@@ -226,7 +230,7 @@ void Shower::HitNumber()
   int Nhit1 = 0; 
   int Nhit2 = 0; 
   int Nhit3 = 0;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     float fThr = (*it)->getEnergy();
     if( (int)fThr==1) Nhit1++;
     else if( (int)fThr==2) Nhit2++;
@@ -245,7 +249,7 @@ int Shower::Nlayer()
   int nlayer = 0;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(int iK=0; iK<50; iK++){
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       int layer=idDecoder(*it)["K-1"];
       if(iK==layer) { nlayer++; break; }
     }
@@ -261,7 +265,7 @@ int Shower::NInteractingLayer()
     float x=0;
     float y=0;
     int count=0;
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       if(iK==idDecoder(*it)["K-1"]){  
 	x+=(*it)->getPosition()[0];
 	y+=(*it)->getPosition()[1];
@@ -271,7 +275,7 @@ int Shower::NInteractingLayer()
     float meanx=x/count;
     float meany=y/count;
     float rms=0;
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       if(iK==idDecoder(*it)["K-1"]){  
 	rms+=( (meanx-x)*(meanx-x) +
 	       (meany-y)*(meany-y) );
@@ -288,12 +292,12 @@ float Shower::Radius(int Zbegin)
   float radius = 0;
   float sumweight = 0;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     if(idDecoder(*it)["K-1"]>=Zbegin){
-      radius+=(	(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])*
-		(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])+
-		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])*
-		(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1]) );
+      radius+=(	(showerBarycenter[0]+showerBarycenter[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])*
+		(showerBarycenter[0]+showerBarycenter[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])+
+		(showerBarycenter[2]+showerBarycenter[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])*
+		(showerBarycenter[2]+showerBarycenter[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1]) );
       sumweight++;
     }
   }
@@ -307,7 +311,7 @@ void Shower::LongitudinalProfile(int &Zbegin,bool show)
   if(Zbegin<0) return;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(unsigned int k=Zbegin; k<48; k++){
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       if(idDecoder(*it)["K-1"]!=k)continue;
       longiProfile[k-Zbegin]++;
     }
@@ -324,7 +328,7 @@ void Shower::LongitudinalProfileBis(bool show)
   memset(longiProfileBis,0,48*sizeof(int));
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   for(unsigned int k=0; k<48; k++){
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       if(idDecoder(*it)["K-1"]!=k)continue;
       longiProfileBis[k]++;
     }
@@ -338,42 +342,44 @@ void Shower::LongitudinalProfileBis(bool show)
 
 void Shower::RadialProfile(int firstIntLayer,bool show)
 {
-  memset(radialProfile,0,96*sizeof(int));
-  memset(radialProfilePlus,0,96*sizeof(int));
-  memset(radialProfileMinus,0,96*sizeof(int));
-  memset(radialProfileBis,0,96*sizeof(int));
+  for(int i=0; i<96; i++){
+    radialProfile[i]=0;
+    radialProfileBis[i]=0;
+    //radialProfilePlus[i]=0;
+    //radialProfileMinus[i]=0;
+  }
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   DistanceBetweenOneHitAndOneTrack* dist=new DistanceBetweenOneHitAndOneTrack();
-  dist->Init(showerAxe);
-  DistanceBetweenOneHitAndOneTrack* distPlus=new DistanceBetweenOneHitAndOneTrack();
-  Track *trackPlus=new Track();
-  std::vector<float> parPlus;for(int i=0;i<4;i++){parPlus.push_back(getShowerBarycenter()[i]+2*getShowerBarycenterError()[i]);}
-  trackPlus->setTrackParameters(parPlus);
-  distPlus->Init(trackPlus);
-  
-  DistanceBetweenOneHitAndOneTrack* distMinus=new DistanceBetweenOneHitAndOneTrack();
-  Track *trackMinus=new Track();
-  std::vector<float> parMinus;for(int i=0;i<4;i++){parMinus.push_back(getShowerBarycenter()[i]-2*getShowerBarycenterError()[i]);}
-  trackMinus->setTrackParameters(parMinus);
-  distMinus->Init(trackMinus);
+  dist->Init(showerBarycenter);
+  //DistanceBetweenOneHitAndOneTrack* distPlus=new DistanceBetweenOneHitAndOneTrack();
+  //Track *trackPlus=new Track();
+  //std::vector<float> parPlus;for(int i=0;i<4;i++){parPlus.push_back(showerBarycenter[i]+2*getShowerBarycenterError()[i]);}
+  //trackPlus->setTrackParameters(parPlus);
+  //distPlus->Init(trackPlus);
+  //
+  //DistanceBetweenOneHitAndOneTrack* distMinus=new DistanceBetweenOneHitAndOneTrack();
+  //Track *trackMinus=new Track();
+  //std::vector<float> parMinus;for(int i=0;i<4;i++){parMinus.push_back(showerBarycenter[i]-2*getShowerBarycenterError()[i]);}
+  //trackMinus->setTrackParameters(parMinus);
+  //distMinus->Init(trackMinus);
 
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     int bin=(int)round(dist->CalculateDistance(*it)/10.05);
-    int binPlus=(int)round(distPlus->CalculateDistance(*it)/10.05);
-    int binMinus=(int)round(distMinus->CalculateDistance(*it)/10.05);
+    //int binPlus=(int)round(distPlus->CalculateDistance(*it)/10.05);
+    //int binMinus=(int)round(distMinus->CalculateDistance(*it)/10.05);
     if(bin<96)
       radialProfile[bin]++;
     else continue;
-    radialProfilePlus[binPlus]++;
-    radialProfileMinus[binMinus]++;
+    //radialProfilePlus[binPlus]++;
+    //radialProfileMinus[binMinus]++;
     if(idDecoder(*it)["K-1"]>=firstIntLayer)
       radialProfileBis[bin]++;
   }
   delete dist;
-  delete distPlus; 
-  delete distMinus;
-  delete trackPlus;
-  delete trackMinus;
+  //delete distPlus; 
+  //delete distMinus;
+  //delete trackPlus;
+  //delete trackMinus;
   if(show){
     for(unsigned int i=0; i<96; i++)
       if(radialProfile[i]>0||radialProfileBis[i]>0)
@@ -385,9 +391,9 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
 void Shower::ClusterRadialProfile(bool show)
 {
   DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
-  dist->Init(showerAxe);
+  dist->Init(showerBarycenter);
   memset(clusterRadialProfile,0,96*sizeof(int));
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     int bin=int(dist->CalculateDistance(*it));
     if(bin<96){
       clusterRadialProfile[bin]++;
@@ -406,29 +412,29 @@ void Shower::ClusterRadialProfile(bool show)
 float Shower::FirstLayerClusterRatio()
 {
   float ratio=0;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->getLayerID()<15)
       ratio++;
   }
-  return ratio/getClusters().size();
+  return ratio/clusters.size();
 }
 
 
 float Shower::CentralHitRatio()
 {
   float ratio=0;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
-    if(fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])<30&&
-       fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])<30)
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
+    if(fabs(showerBarycenter[0]+showerBarycenter[1]*(*it)->getPosition()[2]-(*it)->getPosition()[0])<30&&
+       fabs(showerBarycenter[2]+showerBarycenter[3]*(*it)->getPosition()[2]-(*it)->getPosition()[1])<30)
       ratio++;
   }
-  return ratio/getHits().size();
+  return ratio/hits.size();
 }
 
 int Shower::NeutralShower()
 {
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  if( (*getClusters().begin())->getLayerID()>4 )
+  if( (*clusters.begin())->getLayerID()>4 )
     return 1;
   else return 0;
 }
@@ -441,10 +447,10 @@ int Shower::holeFinder(int begin)
   for(int k=begin+1; k<begin+5; k++){
     int nhit=0;
     if(k>48) continue;
-    for(std::vector<EVENT::CalorimeterHit*>::iterator hit=getHits().begin(); hit!=getHits().end(); ++hit){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator hit=hits.begin(); hit!=hits.end(); ++hit){
       if(idDecoder(*hit)["K-1"]==k &&
-	 fabs(getShowerBarycenter()[0]+getShowerBarycenter()[1]*(*hit)->getPosition()[2]-(*hit)->getPosition()[0])<100 &&
-	 fabs(getShowerBarycenter()[2]+getShowerBarycenter()[3]*(*hit)->getPosition()[2]-(*hit)->getPosition()[1])<100 ) {nhit++;break;}
+	 fabs(showerBarycenter[0]+showerBarycenter[1]*(*hit)->getPosition()[2]-(*hit)->getPosition()[0])<100 &&
+	 fabs(showerBarycenter[2]+showerBarycenter[3]*(*hit)->getPosition()[2]-(*hit)->getPosition()[1])<100 ) {nhit++;break;}
     }
     if(nhit==0) hole++;
   }
@@ -458,8 +464,8 @@ float Shower::FractalDimension()
   float f3D=0;
   for(int i=0; i<7; i++){
     int Ncube=NhitInCube(vec[i]);
-    if(Ncube>=getNumberOfHits()[0]) {return 0;}
-    f3D+=std::log(float(getNumberOfHits()[0])/Ncube)/std::log(vec[i]);
+    if(Ncube>=Nhit.at(0)) {return 0;}
+    f3D+=std::log(float(Nhit.at(0))/Ncube)/std::log(vec[i]);
   }
   return f3D/7;  
 }
@@ -469,7 +475,7 @@ int Shower::NhitInCube(int CubeSize)
   std::vector<int> keys;
   int ncube=0;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");  
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     int newI=idDecoder(*it)["I"]/(CubeSize+1);
     int newJ=idDecoder(*it)["J"]/(CubeSize+1);
     int newK=idDecoder(*it)["K-1"]/(CubeSize+1);
@@ -485,7 +491,7 @@ int Shower::Edge()
 {
   int edge=0;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(std::vector<EVENT::CalorimeterHit*>::iterator hit=getHits().begin(); hit!=getHits().end(); ++hit){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator hit=hits.begin(); hit!=hits.end(); ++hit){
     if( idDecoder(*hit)["I"]<=8  || 
 	idDecoder(*hit)["I"]>=89 ||
 	idDecoder(*hit)["J"]<=8  || 
@@ -499,7 +505,7 @@ int Shower::Edge()
 int Shower::ClusterEMNumber()
 {
   int ncluster=0;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->getHits().size()>=10 )
       ncluster++;
   }
@@ -509,10 +515,10 @@ int Shower::ClusterEMNumber()
 float Shower::MeanClusterSize()
 {
   float meanSize=0;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     meanSize+=(*it)->getHits().size();
   }
-  return meanSize/getClusters().size();
+  return meanSize/clusters.size();
 }
 
 int Shower::FirstLayerRMS()
@@ -525,7 +531,7 @@ int Shower::FirstLayerRMS()
   memset(xm,0,5*sizeof(float));
   memset(ym,0,5*sizeof(float));
   memset(nclus,0,5*sizeof(int));
-  std::vector<Cluster*> clVec=getClusters();
+  std::vector<Cluster*> clVec=clusters;
   clVec.erase(std::remove_if(clVec.begin(), clVec.end(), 
 			     ClusterClassFunction::removeClusterAfterFifthLayer),
 	      clVec.end());
@@ -564,9 +570,9 @@ std::vector<int> Shower::Density()
 {
   std::vector<int> density;
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     density.push_back(0);
-    for(std::vector<EVENT::CalorimeterHit*>::iterator jt=getHits().begin(); jt!=getHits().end(); ++jt){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator jt=hits.begin(); jt!=hits.end(); ++jt){
       if( (*it)==(*jt) ) continue;
       if( fabs(idDecoder(*it)["I"]-idDecoder(*jt)["I"])<2 && 
 	  fabs(idDecoder(*it)["J"]-idDecoder(*jt)["J"])<2 && 
@@ -575,8 +581,8 @@ std::vector<int> Shower::Density()
     }
     streamlog_out( DEBUG ) << idDecoder(*it)["I"] << " " << idDecoder(*it)["J"] << " " << idDecoder(*it)["K-1"] << "; density = " << density.back() << std::endl;
   }
-  if(density.size()!=getHits().size())
-    streamlog_out( MESSAGE ) << "PROBLEM : density size is " << density.size() << "\t nhit = " << getHits().size() << std::endl;
+  if(density.size()!=hits.size())
+    streamlog_out( MESSAGE ) << "PROBLEM : density size is " << density.size() << "\t nhit = " << hits.size() << std::endl;
   return density;
 }
 
@@ -624,7 +630,7 @@ float Shower::TransverseRatio()
   Row rowx;
   Row rowy;
   Row rowz;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=getHits().begin(); it!=getHits().end(); ++it){
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     rowx.push_back((*it)->getPosition()[0]);
     rowy.push_back((*it)->getPosition()[1]);
     rowz.push_back((*it)->getPosition()[2]);
@@ -651,12 +657,12 @@ void Shower::LayerProperties(bool DATA=true)
 //  int compt[48];memset(compt,0,48*sizeof(int));
 //
 //  std::vector<Cluster*> clusterShower;
-//  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+//  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
 //    if( (*it)->getClusterTag()!=fTrack )
 //      clusterShower.push_back(*it);
 //  }
 //  std::cout << "void Shower::LayerProperties() is ok 1" << std::endl;
-//  for(std::vector<Track*>::iterator track_et_it=getTracks().begin(); track_et_it!=getTracks().end(); ++track_et_it){
+//  for(std::vector<Track*>::iterator track_et_it=tracks.begin(); track_et_it!=tracks.end(); ++track_et_it){
 //    int trackBegin=(int)(*track_et_it)->getTrackStartingPoint().z()-1;
 //    if(trackBegin<0)trackBegin=0;
 //    int trackEnd=(int)(*track_et_it)->getTrackLastPoint().z();

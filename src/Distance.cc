@@ -74,7 +74,7 @@ float DistanceBetweenOneHitAndOneCluster::CalculateDistance()
 
 //----------------------------------------------------------------------------------
 
-DistanceBetweenOneClusterAndOneTrack::DistanceBetweenOneClusterAndOneTrack() : Distance(), aPataTrack(0), Nx(0), Ny(0), u(0), B(0), normU(0)
+DistanceBetweenOneClusterAndOneTrack::DistanceBetweenOneClusterAndOneTrack() : Distance(), trackParams(0), Nx(0), Ny(0), u(0), B(0), normU(0)
 {
   /*
     cluster C(x_c,y_c,z_c)
@@ -85,17 +85,17 @@ DistanceBetweenOneClusterAndOneTrack::DistanceBetweenOneClusterAndOneTrack() : D
   */
 }
 
-void DistanceBetweenOneClusterAndOneTrack::Init(Track* trk)
+void DistanceBetweenOneClusterAndOneTrack::Init(std::vector<float> &params)
 {
-  aPataTrack=trk;
+  trackParams=params;
   //Nx,Ny : plans containing the track
-  Nx = ThreeVector(-1., 0., aPataTrack->getTrackParameters()[1]);
-  Ny = ThreeVector(0., -1., aPataTrack->getTrackParameters()[3]);
+  Nx = ThreeVector(-1., 0., trackParams[1]);
+  Ny = ThreeVector(0., -1., trackParams[3]);
   //u : track orientation vector
   u=Nx.cross(Ny);
   normU=u.mag();
   //B : a track point 
-  B = ThreeVector(aPataTrack->getTrackParameters()[0],aPataTrack->getTrackParameters()[2],0.);
+  B = ThreeVector(trackParams[0],trackParams[2],0.);
 }
 
 float DistanceBetweenOneClusterAndOneTrack::CalculateDistance(Cluster* cluster)
@@ -106,15 +106,15 @@ float DistanceBetweenOneClusterAndOneTrack::CalculateDistance(Cluster* cluster)
     return (BC.cross(u)).mag()/normU;
   else{
     std::cout << "ORIENTATION VECTOR u IS NULL => should return exception (cluster and track)" << std::endl;
-    std::cout << "aPataTrack->getTrackParameters()[1] = " << aPataTrack->getTrackParameters()[1] 
-    	      << "\t aPataTrack->getTrackParameters()[3] = " << aPataTrack->getTrackParameters()[3] << std::endl;
+    std::cout << "trackParams[1] = " << trackParams[1] 
+    	      << "\t trackParams[3] = " << trackParams[3] << std::endl;
     return 0;
   }
 }
 
 //----------------------------------------------------------------------------------
 
-DistanceBetweenOneHitAndOneTrack::DistanceBetweenOneHitAndOneTrack() : Distance(), aPataTrack(0), Nx(0), Ny(0), u(0), B(0), normU(0)
+DistanceBetweenOneHitAndOneTrack::DistanceBetweenOneHitAndOneTrack() : Distance(), trackParams(0), Nx(0), Ny(0), u(0), B(0), normU(0)
 {  
   /*
     hit H(x_c,y_c,z_c)
@@ -125,17 +125,17 @@ DistanceBetweenOneHitAndOneTrack::DistanceBetweenOneHitAndOneTrack() : Distance(
   */
 }
 
-void DistanceBetweenOneHitAndOneTrack::Init(Track* trk)
+void DistanceBetweenOneHitAndOneTrack::Init(std::vector<float> &params)
 {
-  aPataTrack=trk;
+  trackParams=params;
   //Nx,Ny : plans containing the track
-  Nx = ThreeVector(-1., 0., aPataTrack->getTrackParameters()[1]);
-  Ny = ThreeVector(0., -1., aPataTrack->getTrackParameters()[3]);
+  Nx = ThreeVector(-1., 0., trackParams[1]);
+  Ny = ThreeVector(0., -1., trackParams[3]);
   //u : track orientation vector
   u=Nx.cross(Ny);
   normU=u.mag();
   //B : a track point 
-  B = ThreeVector(aPataTrack->getTrackParameters()[0],aPataTrack->getTrackParameters()[2],0.);
+  B = ThreeVector(trackParams[0],trackParams[2],0.);
 }
 
 float DistanceBetweenOneHitAndOneTrack::CalculateDistance(EVENT::CalorimeterHit* hit)
@@ -147,8 +147,8 @@ float DistanceBetweenOneHitAndOneTrack::CalculateDistance(EVENT::CalorimeterHit*
   else{
     streamlog_out( MESSAGE ) << "ORIENTATION VECTOR u IS NULL => should return exception (hit and track)" << std::endl;
     streamlog_out( MESSAGE ) << "DistanceBetweenOneHitAndOneTrack::CalculateDistance==>\t"
-			     << aPataTrack->getTrackParameters()[1] << "\t"
-			     << aPataTrack->getTrackParameters()[3] << std::endl;
+			     << trackParams[1] << "\t"
+			     << trackParams[3] << std::endl;
     return 0;
   }
 }

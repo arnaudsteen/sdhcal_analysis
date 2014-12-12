@@ -157,8 +157,8 @@ class ShowerProcessor : public Processor {
   int longiProfile[48];
   int longiProfile_bis[48];
   int radialProfile[96];
-  int radialProfilePlus[96];
-  int radialProfileMinus[96];
+  //int radialProfilePlus[96];
+  //int radialProfileMinus[96];
   int clusterRadialProfile[96];
   int radialProfileBis[96];
   int clusterMips;
