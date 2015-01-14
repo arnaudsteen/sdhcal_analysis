@@ -145,12 +145,9 @@ class ShowerProcessor : public Processor {
   float energy_;
   int hole;
   float cog[4];
-  int nlastplan;
-  int edge;
   int neutral;
   int singlePart;
   float centralRatio;
-  float firstLayerRatio;
   float fractaldim;
   int TrackMultiplicity;
   float meanClusterSize;
@@ -173,9 +170,7 @@ class ShowerProcessor : public Processor {
   int clusterEM;
   std::vector<int> clusterSize;
   std::vector<int> density;
-  int nclusterlayer[48];
   float transverseRatio;
-  float _primaryTrackCosTheta;
   ThreeVector _incidentParticleMomentum; //if simu
   float _incidentParticleCosTheta; //if simu
   float _reconstructedCosTheta;

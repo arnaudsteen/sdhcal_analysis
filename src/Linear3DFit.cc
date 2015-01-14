@@ -1,6 +1,6 @@
 #include "Linear3DFit.hh"
 
-Linear3DFit::Linear3DFit( std::vector<ThreeVector> pos , std::vector<int> ClustersSize) {
+Linear3DFit::Linear3DFit( std::vector<ThreeVector> &pos , std::vector<int> &ClustersSize) {
   chi2 = params[0] = params[1] = params[2] = params[3] = 0;
   paramsError[0] = paramsError[1] = paramsError[2] = paramsError[3] = 0;
   positions = pos;

@@ -28,6 +28,7 @@ Shower::~Shower()
   Nhit.clear();
   showerBarycenter.clear();  
   showerBarycenterError.clear();  
+  nhitInLayer.clear();
 }
 
 void Shower::BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,
@@ -47,7 +48,6 @@ void Shower::BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,
     }
   }
 }
-
 void Shower::FindClustersInLayer()
 {
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
@@ -62,6 +62,9 @@ void Shower::FindClustersInLayer()
     cl->BuildCluster(_temp,hits, (*it));
     cl->buildClusterPosition();
     cl->setClusterID(ID);
+    if(nhitInLayer[cl->getLayerID()])
+      nhitInLayer[cl->getLayerID()]+=cl->getHits().size();
+    else nhitInLayer[cl->getLayerID()]=cl->getHits().size();
     clusters.push_back(cl);
   }
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
@@ -305,7 +308,7 @@ float Shower::Radius(int Zbegin)
   return sqrt(radius/sumweight);
 }
 
-void Shower::LongitudinalProfile(int &Zbegin,bool show)
+void Shower::LongitudinalProfile(int Zbegin,bool show)
 {
   memset(longiProfile,0,48*sizeof(int));
   if(Zbegin<0) return;
@@ -409,17 +412,6 @@ void Shower::ClusterRadialProfile(bool show)
   }
 }
 
-float Shower::FirstLayerClusterRatio()
-{
-  float ratio=0;
-  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
-    if( (*it)->getLayerID()<15)
-      ratio++;
-  }
-  return ratio/clusters.size();
-}
-
-
 float Shower::CentralHitRatio()
 {
   float ratio=0;
@@ -485,21 +477,6 @@ int Shower::NhitInCube(int CubeSize)
     keys.push_back(key);
   }
   return ncube;    
-}
-
-int Shower::Edge()
-{
-  int edge=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(std::vector<EVENT::CalorimeterHit*>::iterator hit=hits.begin(); hit!=hits.end(); ++hit){
-    if( idDecoder(*hit)["I"]<=8  || 
-	idDecoder(*hit)["I"]>=89 ||
-	idDecoder(*hit)["J"]<=8  || 
-	idDecoder(*hit)["J"]>=89 ){
-      edge+=1;
-    }
-  }
-  return edge;
 }
 
 int Shower::ClusterEMNumber()
@@ -646,6 +623,29 @@ float Shower::TransverseRatio()
   pca->End();
   delete pca;
   return transverseRatio;
+}
+
+float Shower::RadiusAtShowerMax()
+{
+  std::map<int,int>::iterator maxIt=std::max_element(nhitInLayer.begin(), nhitInLayer.end(), LessBySecond());
+  float rms[2];
+  float mean[2];
+  for(int i=0;i<2;i++){rms[i]=0;mean[i]=0;}
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    if( (*it)->getLayerID()!=maxIt->first ) continue;
+    for(std::vector<CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt){
+      mean[0]+= (*jt)->getPosition()[0];
+      mean[1]+= (*jt)->getPosition()[1];
+      rms[0]+= (*jt)->getPosition()[0]*(*jt)->getPosition()[0];
+      rms[1]+= (*jt)->getPosition()[1]*(*jt)->getPosition()[1];
+    }
+  }
+  mean[0]=mean[0]/maxIt->second;
+  mean[1]=mean[1]/maxIt->second;
+  rms[0]=rms[0]/maxIt->second-mean[0]*mean[0];
+  rms[1]=rms[1]/maxIt->second-mean[1]*mean[1];
+  streamlog_out( MESSAGE ) << "MAXIMUM FOUND AT " << maxIt->first << "\t WITH A RADIUS = " << sqrt(rms[0]+rms[1]) << std::endl;
+  return sqrt(rms[0]+rms[1]);
 }
 
 void Shower::LayerProperties(bool DATA=true)

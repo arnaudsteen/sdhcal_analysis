@@ -31,17 +31,15 @@ class Shower
   int Nlayer();
   int NInteractingLayer();
   float Radius(int begin);
-  void LongitudinalProfile(int& Zbegin,bool show=false); //relative to shower starting layer
+  void LongitudinalProfile(int Zbegin,bool show=false); //relative to shower starting layer
   void LongitudinalProfileBis(bool show=false); //relative to calorimeter front
   void RadialProfile(int firstIntLayer, bool show=false);
   void ClusterRadialProfile(bool show=false);
-  float FirstLayerClusterRatio();
   float CentralHitRatio();
   int NeutralShower();
   int holeFinder(int begin);
   float FractalDimension();
   int NhitInCube(int CubeSize);
-  int Edge();
   int ClusterEMNumber();
   float MeanClusterSize();
   int FirstLayerRMS();
@@ -52,6 +50,7 @@ class Shower
   float TransverseRatio();
   int TryAgainToFindShowerStartingLayer();
   void LayerProperties(bool DATA);
+  float RadiusAtShowerMax();
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
   inline void AddHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits.insert(hits.end(),hitVec.begin(),hitVec.end());}
@@ -60,15 +59,15 @@ class Shower
   inline std::vector<Track*>& getTracks(){return tracks;}
   inline void setTracks(std::vector<Track*> &trVec){tracks=trVec;}
   inline void addTrack(Track* track){tracks.push_back(track);}
-  inline void setShowerBarycenter(std::vector<float> pos){showerBarycenter=pos;}
+  inline void setShowerBarycenter(std::vector<float> &pos){showerBarycenter=pos;}
   inline std::vector<float>& getShowerBarycenter(){return showerBarycenter;}
-  inline void setShowerBarycenterError(std::vector<float> err){showerBarycenterError=err;}
+  inline void setShowerBarycenterError(std::vector<float> &err){showerBarycenterError=err;}
   inline std::vector<float>& getShowerBarycenterError(){return showerBarycenterError;}
   inline void setFirstLayer(int lay){firstLayer=lay;}
   inline void setLastLayer(int lay){lastLayer=lay;}
   inline int getFirstLayer(){return firstLayer;}
   inline int getLastLayer(){return lastLayer;}
-  inline void setNumberOfHits(std::vector<int> nhit){Nhit=nhit;}
+  inline void setNumberOfHits(std::vector<int> &nhit){Nhit=nhit;}
   inline std::vector<int>& getNumberOfHits(){return Nhit;}
   inline int* getLongiProfile(){return longiProfile;}
   inline int* getRadialProfile(){return radialProfile;}
@@ -86,6 +85,7 @@ class Shower
   std::vector<Track*> tracks;
   std::vector<float> showerBarycenter;
   std::vector<float> showerBarycenterError;
+  std::map<int,int> nhitInLayer;
   int longiProfile[48];//relative to shower starting layer
   int longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
@@ -108,6 +108,15 @@ class ShowerClassFunction{
   {return hit1->getPosition()[2]<hit2->getPosition()[2];}
   static bool sortShowersBySize(Shower* s1, Shower* s2)
   {return s1->getHits().size()>s2->getHits().size();}
+};
+
+struct LessBySecond
+{
+    template <typename Lhs, typename Rhs>
+    bool operator()(const Lhs& lhs, const Rhs& rhs) const
+    {
+        return lhs.second < rhs.second;
+    }
 };
 
 #endif

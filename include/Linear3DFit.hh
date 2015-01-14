@@ -27,7 +27,7 @@ protected :
   void ComputeChi2();
 
 public :
-  Linear3DFit( std::vector<ThreeVector> pos , std::vector<int> ClustersSize);
+  Linear3DFit( std::vector<ThreeVector> &pos , std::vector<int> &ClustersSize);
   virtual ~Linear3DFit();
   void Fit();
   inline float GetChi2(){ ComputeChi2(); return chi2; }

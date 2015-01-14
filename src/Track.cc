@@ -187,21 +187,22 @@ std::vector<int> TrackCaracteristics::numberOfHits()
 
 float TrackCaracteristics::TrackLength()
 {
-  float layerThickness=2;
-  std::vector<float> param=_theTrack->getTrackParameters();
-  float x[3];
-  float y[3];
-  float begin=this->firstP[2];
-  float end=this->lastP[2];
-  x[2]=begin*layerThickness;
-  y[2]=end*layerThickness;
-  x[0]=begin*layerThickness*param[1]+param[0];
-  y[0]=end*layerThickness*param[1]+param[0];
-  x[1]=begin*layerThickness*param[3]+param[2];
-  y[1]=end*layerThickness*param[3]+param[2];
-  return sqrt( pow(x[0]-y[0],2) +
-	       pow(x[1]-y[1],2) +
-	       pow(x[2]-y[2],2) );
+  //float layerThickness=2;
+  //std::vector<float> param=_theTrack->getTrackParameters();
+  return (firstP-lastP).mag();
+//float x[3];
+//float y[3];
+//float begin=this->firstP.z();
+//float end=this->lastP.z();
+//x[2]=begin*layerThickness;
+//y[2]=end*layerThickness;
+//x[0]=begin*layerThickness*param[1]+param[0];
+//y[0]=end*layerThickness*param[1]+param[0];
+//x[1]=begin*layerThickness*param[3]+param[2];
+//y[1]=end*layerThickness*param[3]+param[2];
+//return sqrt( pow(x[0]-y[0],2) +
+//	       pow(x[1]-y[1],2) +
+//	       pow(x[2]-y[2],2) );
 }
 
 std::vector<int> TrackCaracteristics::ClustersSize()

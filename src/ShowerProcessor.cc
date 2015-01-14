@@ -122,6 +122,7 @@ void ShowerProcessor::init()
   }
   tree->Branch("eventTime",&evtTime);
   tree->Branch("spillEventTime",&spillEvtTime);
+  tree->Branch("eventNumber",&_nEvt);
   tree->Branch("NShowers",&nshower);
   tree->Branch("Nhit",&nhit);
   tree->Branch("Nhit1",&nhit1);
@@ -143,10 +144,8 @@ void ShowerProcessor::init()
   //tree->Branch("RadialProfilePlus",&radialProfilePlus,"RadialProfilePlus[96]/I");
   //tree->Branch("RadialProfileMinus",&radialProfileMinus,"RadialProfileMinus[96]/I");
   tree->Branch("MaxRadius",&maxradius);
-  tree->Branch("Lasthit",&nlastplan);
   tree->Branch("Hole",&hole);
   tree->Branch("CoG",&cog,"CoG[4]/F");
-  tree->Branch("FirstLayerRatio",&firstLayerRatio);
   tree->Branch("CentralRatio",&centralRatio);
   tree->Branch("F3D",&fractaldim);
   tree->Branch("Density","std::vector<int>",&density);
@@ -156,17 +155,14 @@ void ShowerProcessor::init()
   tree->Branch("MultiplicityPerLayer","std::vector<double>",&mul_layer);
   tree->Branch("MeanClusterSize",&meanClusterSize);
   tree->Branch("Nclusters",&nclusters);
-  tree->Branch("NclusterLayer",&nclusterlayer,"NclusterLayer[48]/I");
   tree->Branch("TrackClusterSize","std::vector<int>",&trackclSize);
   tree->Branch("TrackClusterNumber","std::vector<int>",&trackNclusters);
   tree->Branch("ClusterMip",&clusterMips);
   tree->Branch("ClusterEM",&clusterEM);
   tree->Branch("ClusterIsolated",&clusterIsolated);
-  tree->Branch("Edge",&edge);
   tree->Branch("Neutral",&neutral);
   tree->Branch("Single",&singlePart);
   tree->Branch("TransverseRatio",&transverseRatio);
-  tree->Branch("PrimaryTrackCosTheta",&_primaryTrackCosTheta);
   tree->Branch("IncidentParticleCosTheta",&_incidentParticleCosTheta);
   tree->Branch("ReconstructedCosTheta",&_reconstructedCosTheta);
 
@@ -473,11 +469,6 @@ void ShowerProcessor::ShowerAnalysis()
     hough->ComputeHoughTransform();
     shower->setTracks( hough->ReturnTracks() );
     //    shower->LayerProperties();
-#ifdef SHOW_TRACKS
-    for(std::vector<Track*>::iterator jt=shower->getTracks().begin(); jt!=shower->getTracks().end(); ++jt){
-      std::vector<float> param=(*jt)->getTrackParameters();
-    }
-#endif
     TrackLength.reserve(shower->getTracks().size());
     trackNclusters.reserve(shower->getTracks().size());
     TrackMultiplicity=int(shower->getTracks().size());
@@ -493,10 +484,6 @@ void ShowerProcessor::ShowerAnalysis()
       nhough1+=aTrackCaracteristics->ReturnTrackNhit()[1];
       nhough2+=aTrackCaracteristics->ReturnTrackNhit()[2];
       nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
-#ifdef SHOW_TRACKS
-      streamlog_out( MESSAGE ) << ":Track between:\t" << aTrackCaracteristics->ReturnTrackFirstPoint()[2] << " ==> " << aTrackCaracteristics->ReturnTrackLastPoint()[2]
-    			       << "\t:# Clusters:\t" << aTrackCaracteristics->ReturnTrackNumberOfClusters() << std::endl;
-#endif
       delete aTrackCaracteristics;
     }
     //if(begin<0)
@@ -542,15 +529,14 @@ void ShowerProcessor::ShowerAnalysis()
   ThreeVector _reconstructedMomentum=px.cross(py);
   _reconstructedCosTheta= (px.cross(py)).cosTheta();
   radius=shower->Radius(begin);
-  firstLayerRatio=shower->FirstLayerClusterRatio();
   centralRatio=shower->CentralHitRatio();
   fractaldim=shower->FractalDimension();
   neutral=shower->NeutralShower();
-  edge=shower->Edge();
   clusterEM=shower->ClusterEMNumber();
   meanClusterSize=shower->MeanClusterSize(); 
   singlePart=shower->FirstLayerRMS();
   transverseRatio=shower->TransverseRatio();
+  float tot=shower->RadiusAtShowerMax();
 }
 
 void ShowerProcessor::processRunHeader( LCRunHeader* run)
@@ -586,6 +572,7 @@ void ShowerProcessor::processEvent( LCEvent * evt )
 	calohit.push_back(hit);
       }
       //      makeHitMap();
+      streamlog_out( MESSAGE ) << "numElements = " << numElements << std::endl;
       if(DATA) {
         findEventTime(evt,col);
         findSpillEventTime(evt,col);
