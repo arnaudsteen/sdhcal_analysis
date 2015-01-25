@@ -44,7 +44,7 @@ void Hough::ComputeHoughTransform()
     float par[4];
     par[0]=(*it).theta*PI/tetamax;par[1]=(*it).rho;
     par[2]=selectedBin.theta*PI/tetamax;par[3]=selectedBin.rho;
-    if(selectedBin.clusters.size()>3){
+    if(selectedBin.clusters.size()>cutValue){
       Track* track=new Track();
       track->setHTParameters(par);
       track->setClusters(selectedBin.clusters);
@@ -52,6 +52,7 @@ void Hough::ComputeHoughTransform()
       if( track->getChi2()>5 ) {delete track;continue;}
       track->AddClusters(this->getClusters());
       if( track->getChi2()>5 || track->getClusters().size()<=4 ) {delete track;continue;}
+      splitTrack(track);
       addTrack(track);
       for(std::vector<Cluster*>::iterator kt=track->getClusters().begin(); kt!=track->getClusters().end(); ++kt){
 	(*kt)->setClusterTag(fTrack);
@@ -61,6 +62,15 @@ void Hough::ComputeHoughTransform()
     RemoveTrackedClusters(hgSpaceZX);
   }
   hgSpaceZX.clear();
+  for(std::vector<Track*>::iterator it=tracks.begin(); it!=tracks.end(); ++it){
+    if( (*it)->getClusters().size()<4 ){
+      for(std::vector<Cluster*>::iterator jt=(*it)->getClusters().begin(); jt!=(*it)->getClusters().end(); ++jt){
+	(*jt)->setClusterTag(fMip);
+      }
+      tracks.erase(it);
+      it--;
+    }
+  }
 }
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -132,7 +142,6 @@ void Hough::RemoveIsolatedClusters(std::vector<Cluster*> &clVec)
 {
   bool isol;
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    int count=0;
     if( (*it)->getClusterTag()==fTrack ){
       streamlog_out( WARNING ) << "!!PROBLEM!!\t tracked clusters should have been already removed from potential track clusters" << std::endl;
       clVec.erase(it);
@@ -143,11 +152,8 @@ void Hough::RemoveIsolatedClusters(std::vector<Cluster*> &clVec)
     for(std::vector<Cluster*>::iterator jt=clVec.begin(); jt!=clVec.end(); ++jt){
       if( (*it)==(*jt) ) continue;
       if( fabs((*it)->getLayerID()-(*jt)->getLayerID())<=3 ){//&&
-	//fabs((*it)->getClusterPosition().y()-(*jt)->getClusterPosition().y())<100 &&
-	//	  fabs((*it)->getClusterPosition().x()-(*jt)->getClusterPosition().x())<100 ){
-	count++;
+	{isol=false; break;}
       }
-      if(count>=2) {isol=false; break;}
     }
     if(isol){
       (*it)->setClusterTag(fIsolated);
@@ -157,4 +163,23 @@ void Hough::RemoveIsolatedClusters(std::vector<Cluster*> &clVec)
   }
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+void Hough::splitTrack(Track* track)
+{
+  std::sort(track->getClusters().begin(),track->getClusters().end(),ClusterClassFunction::sortDigitalClusterByLayer);
+  int ref=(*track->getClusters().begin())->getLayerID();
+  for(std::vector<Cluster*>::iterator it=track->getClusters().begin(); it!=track->getClusters().end(); ++it){
+    if( (*it)->getLayerID()-ref>3 ){
+      for(std::vector<Cluster*>::iterator jt=it; jt!=track->getClusters().end(); ++jt){
+	track->RemoveCluster(jt);
+	jt--;
+      } 
+      return;
+    }
+    else{
+      ref=(*it)->getLayerID();
+    }
+  }
+}
 //------------------------------------------------------------------------------------------------------------------------

@@ -120,8 +120,11 @@ void TrackProc::init()
   streamlog_out( MESSAGE ) << "meanEfficiency = " << meanEfficiency << "\t"
 			   << "meanMultiplicity = " << meanMultiplicity << std::endl;
   //}
+  for(int i=0; i<48; i++){
+    _mulGlobal3[i]=0;
+    _countGlobal3[i]=0;
+  }
 }
-
 //------------------------------------------------------------------------------------------------------------------------
 
 void TrackProc::findEventTime(LCEvent* evt,LCCollection* col)
@@ -214,7 +217,7 @@ void TrackProc::findSpillEventTime(LCEvent* evt,LCCollection* col)
 void TrackProc::doTrackStudy()
 {
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  streamlog_out( DEBUG ) << "numElements = " << numElements << std::endl;
+  //streamlog_out( MESSAGE ) << "numElements = " << numElements << std::endl;
   clusters.clear();
   std::vector<EVENT::CalorimeterHit*> _temp;
   int ID=0;
@@ -237,7 +240,7 @@ void TrackProc::doTrackStudy()
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->isIsolated() ){
       streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition() << "\t layer = " << (*it)->getLayerID() << "\t" 
-			       << "is isolated and rejected" << std::endl;
+			     << "is isolated and rejected" << std::endl;
       delete *it; 
       clusters.erase(it); 
       it--;
@@ -257,6 +260,7 @@ void TrackProc::doTrackStudy()
       fillTreeBranch();
     }
   }
+  //  else{std::cout<<"clusters.size() = "<<clusters.size()<< std::endl;}
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     delete *it;
   }
@@ -310,7 +314,6 @@ int TrackProc::Nlayer()
 
 bool TrackProc::TrackSelection(std::vector<Cluster*> &clVec)
 {
-  //  if(Nlayer()<35)return false;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clVec);
   aTrackingAlgo->DoTracking();
@@ -318,12 +321,10 @@ bool TrackProc::TrackSelection(std::vector<Cluster*> &clVec)
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     for(int i=0; i<4; i++){
       trackParams[i]=aTrack->getTrackParameters()[i];
-      //std::cout << trackParams[i] << "\t" ;
     }
     TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
     aTrackCaracteristics->Init(aTrack);
     aTrackCaracteristics->ComputeTrackCaracteritics();
-    //if(aTrackCaracteristics->ReturnTrackLength()<85||aTrackCaracteristics->ReturnTrackLength()>100) {delete aTrackCaracteristics; return false;}
     if( logLevelName()=="DEBUG" ){
       std::cout << "aTrackCaracteristics->ReturnTrackFirstPoint() = " << aTrackCaracteristics->ReturnTrackFirstPoint() << "\n"
 		<< "aTrackCaracteristics->ReturnTrackLastPoint() = " << aTrackCaracteristics->ReturnTrackLastPoint() << "\n"
@@ -336,10 +337,6 @@ bool TrackProc::TrackSelection(std::vector<Cluster*> &clVec)
   else {delete aTrackingAlgo; return false;}
   transversRatio=aTrackingAlgo->getTransverseRatio();
   delete aTrackingAlgo;
-  //ThreeVector px(-1,0,trackParams[1]);
-  //ThreeVector py(0,-1,trackParams[3]);
-  //if( px.cross(py).cosTheta() > 0.3 ) return false; 
-  //else streamlog_out( DEBUG ) << "costheta = " << px.cross(py).cosTheta() << std::endl;
   return true;
 }
 
@@ -351,19 +348,19 @@ bool TrackProc::findInteraction(std::vector<Cluster*> &clusters,float* &pars)
     float xbary=pars[0]+pars[1]*(*it)->getClusterPosition().z();
     float ybary=pars[2]+pars[3]*(*it)->getClusterPosition().z();
     if( (*it)->getHits().size()<4 || 
-	fabs(xbary-(*it)->getClusterPosition().x())>10||
-	fabs(ybary-(*it)->getClusterPosition().y())>10 ) continue;
+	fabs(xbary-(*it)->getClusterPosition().x())>50||
+	fabs(ybary-(*it)->getClusterPosition().y())>50 ) continue;
     int count=0;
     for(std::vector<Cluster*>::iterator jt=clusters.begin(); jt!=clusters.end(); ++jt){
       if( (*jt)->getHits().size()>=5 && 
-	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()>0&&
-	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()<4&&
-	  fabs(xbary-(*jt)->getClusterPosition().x())<10&&
-	  fabs(ybary-(*jt)->getClusterPosition().y())<10 )
+	  (*jt)->getLayerID()-(*it)->getLayerID()>0&&
+	  (*jt)->getLayerID()-(*it)->getLayerID()<4&&
+	  fabs(xbary-(*jt)->getClusterPosition().x())<50&&
+	  fabs(ybary-(*jt)->getClusterPosition().y())<50 )
 	count++;
     }
     if(count>=3){
-      streamlog_out( DEBUG ) << "an interaction has been found in layer " << (*it)->getClusterPosition().z() << std::endl;
+      streamlog_out( DEBUG ) << "an interaction has been found in layer " << (*it)->getLayerID() << std::endl;
       return true;
     }
   }
@@ -400,10 +397,10 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff2[K]=aLayer->getEfficiency()[1];
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
+      _mulGlobal3[K]+=multi[K];
+      _countGlobal3[K]+=1;
     }
     delete aLayer;
-    streamlog_out( DEBUG ) << "evt number = " << _nEvt << "\t layer = " << K 
-			   << "\t efficiency = " << eff1[K] << std::endl;
   }
   _effGlobal=0;
   _mulGlobal=0;
@@ -494,6 +491,9 @@ void TrackProc::check( LCEvent * evt ) {
 //------------------------------------------------------------------------------------------------------------------------
 
 void TrackProc::end(){ 
+  for(int i=0; i<48; i++){
+    streamlog_out( MESSAGE ) << i << "\t multi = " << _mulGlobal3[i]/_countGlobal3[i] << "\t ntrack = " << _countGlobal3[i] << std::endl;
+  }
   //  file->cd();
   file->Write();
   file->Close();

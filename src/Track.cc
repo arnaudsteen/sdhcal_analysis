@@ -39,7 +39,7 @@ void Track::ComputeTrackParameters(bool setParam)
 {
   std::vector<ThreeVector> vec;
   std::vector<int> clSize;
-  for(std::vector<Cluster*>::iterator it=getClusters().begin(); it!=getClusters().end(); ++it){
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     ThreeVector t3vec( (*it)->getClusterPosition().x(), (*it)->getClusterPosition().y(), (*it)->getClusterPosition().z() );
     vec.push_back(t3vec);
     clSize.push_back( (*it)->getHits().size() );
@@ -67,25 +67,24 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
     }
   DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
   dist->Init(this->getTrackParameters());
-
   for(std::vector<Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    if( (*it)->getClusterTag()==fTrack
-	||fabs( (*it)->getLayerID()-getTrackStartingCluster()->getLayerID() )<2
-	||fabs( (*it)->getLayerID()-getTrackLastCluster()->getLayerID() )<2
-	||std::find(getClusters().begin(), getClusters().end(), (*it))!=getClusters().end()
-	||std::find(getRejectedClusters().begin(),getRejectedClusters().end(),(*it))!=getRejectedClusters().end()
-	)continue;
-    if( dist->CalculateDistance(*it) < 20 ){
-    //if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*it)->getClusterPosition().z()+par[0]) )<20 &&
-    //  	fabs( (*it)->getClusterPosition().y()-(par[3]*(*it)->getClusterPosition().z()+par[2]) )<20 ){
-      getClusters().push_back(*it);
-      ComputeTrackParameters(false);
-      if(getChi2()>5){
-	getClusters().pop_back();
-	getRejectedClusters().push_back(*it);
+    if((*it)->getClusterTag()==fTrack || std::find(clusters.begin(), clusters.end(), (*it))!=clusters.end()||std::find(getRejectedClusters().begin(),getRejectedClusters().end(),(*it))!=getRejectedClusters().end())
+      continue;
+    if( (*it)->getLayerID()>=getTrackStartingCluster()->getLayerID()-2 &&
+	(*it)->getLayerID()<=getTrackLastCluster()->getLayerID()+2 ){
+      if( dist->CalculateDistance(*it) < 20 ){
+	clusters.push_back(*it);
+	ComputeTrackParameters(false);
+	if(getChi2()>10){
+	  clusters.pop_back();
+	  addRejectedClusters(*it);
+	}
+	std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
+	AddClusters(clVec);
       }
-      AddClusters(clVec);
-      std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
+      else{
+	addRejectedClusters(*it);
+      }
     }
   }
   ComputeTrackParameters(true);

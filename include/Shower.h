@@ -48,9 +48,10 @@ class Shower
   int findAsicKey(EVENT::CalorimeterHit* hit);
   int findAsicKey(Cluster* cluster);
   float TransverseRatio();
-  int TryAgainToFindShowerStartingLayer();
   void LayerProperties(bool DATA);
   float RadiusAtShowerMax();
+  float ShowerLength();
+  std::vector<double> RadialTest();
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
   inline void AddHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits.insert(hits.end(),hitVec.begin(),hitVec.end());}
@@ -74,8 +75,6 @@ class Shower
   inline int* getClusterRadialProfile(){return clusterRadialProfile;}
   inline int* getLongiProfileBis(){return longiProfileBis;}
   inline int* getRadialProfileBis(){return radialProfileBis;}
-  //inline int* getRadialProfilePlus(){return radialProfilePlus;}
-  //inline int* getRadialProfileMinus(){return radialProfileMinus;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
 
  private:
@@ -89,14 +88,14 @@ class Shower
   int longiProfile[48];//relative to shower starting layer
   int longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
-  //int radialProfilePlus[96]; //same as radialProfile with showerbarycenter shifted (+sigma)
-  //int radialProfileMinus[96]; //same as radialProfile with showerbarycenter shifted (-sigma)
   int radialProfileBis[96];//primary track not include if any
   int clusterRadialProfile[96];
   int firstLayer;
   int lastLayer;
   std::vector<int> Nhit;
   float transverseRatio;
+  ThreeVector showerStartingClusterPosition;
+  ThreeVector aShowerClusterPositionAtMax;
 };
 
 class ShowerClassFunction{

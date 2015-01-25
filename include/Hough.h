@@ -28,6 +28,7 @@ class Hough
   std::vector<HoughBin> getHoughSpace(std::vector<Cluster*> &clVec, bool ZX);
   void RemoveIsolatedClusters(std::vector<Cluster*>& clVec);
   void RemoveTrackedClusters(std::vector<HoughBin>& hBinVec);
+  void splitTrack(Track* track);
   inline void setClusters(std::vector<Cluster*>& clVec){clusters=clVec;}
   inline void addTrack(Track* patatrack){tracks.push_back(patatrack);}
   inline std::vector<Cluster*>& getClusters(){return clusters;}

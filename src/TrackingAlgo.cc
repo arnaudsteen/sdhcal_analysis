@@ -106,21 +106,14 @@ void TrackingAlgo::DoTracking()
   fit->Fit();
   if( fit->GetChi2()>100 ){
     streamlog_out( DEBUG ) << "track equation:\t" 
-			   << "(zx)\t::" << fit->GetFitParameters()[1] << "*z+" << fit->GetFitParameters()[0] << "::\t" 
-			   << "(zy)\t::" << fit->GetFitParameters()[3] << "*z+" << fit->GetFitParameters()[2] << "::\t" 
-			   << std::endl;
+  			   << "(zx)\t::" << fit->GetFitParameters()[1] << "*z+" << fit->GetFitParameters()[0] << "::\t" 
+  			   << "(zy)\t::" << fit->GetFitParameters()[3] << "*z+" << fit->GetFitParameters()[2] << "::\t" 
+  			   << std::endl;
     streamlog_out( DEBUG ) << "fit->GetChi2() = " << fit->GetChi2() << std::endl;
     trackingSuccess=false; 
     delete fit;
     return;
   }
-  //if( fit->GetFitParameters()[0]<=8||fit->GetFitParameters()[0]>88||
-  //    fit->GetFitParameters()[2]<=8||fit->GetFitParameters()[2]>88 ){
-  //  streamlog_out( DEBUG ) << "cosmic particle" << std::endl;
-  //  trackingSuccess=false; 
-  //  delete fit;
-  //  return;
-  //}
   if( findInteraction(clusters,fit->GetFitParameters()) ){
     streamlog_out( DEBUG ) << "findInteraction(clusters,fit->GetFitParameters()) is true" << std::endl;
     trackingSuccess=false; 
@@ -147,19 +140,19 @@ bool TrackingAlgo::findInteraction(std::vector<Cluster*> &clusters,float* pars)
     float xbary=pars[0]+pars[1]*(*it)->getClusterPosition().z();
     float ybary=pars[2]+pars[3]*(*it)->getClusterPosition().z();
     if( (*it)->getHits().size()<4 || 
-	fabs(xbary-(*it)->getClusterPosition().x())>10||
-	fabs(ybary-(*it)->getClusterPosition().y())>10 ) continue;
+	fabs(xbary-(*it)->getClusterPosition().x())>50||
+	fabs(ybary-(*it)->getClusterPosition().y())>50 ) continue;
     int count=0;
     for(std::vector<Cluster*>::iterator jt=clusters.begin(); jt!=clusters.end(); ++jt){
       if( (*jt)->getHits().size()>=5 && 
-	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()>0&&
-	  (*jt)->getClusterPosition().z()-(*it)->getClusterPosition().z()<4&&
-	  fabs(xbary-(*jt)->getClusterPosition().x())<10&&
-	  fabs(ybary-(*jt)->getClusterPosition().y())<10 )
+	  (*jt)->getLayerID()-(*it)->getLayerID()>0&&
+	  (*jt)->getLayerID()-(*it)->getLayerID()<4&&
+	  fabs(xbary-(*jt)->getClusterPosition().x())<50&&
+	  fabs(ybary-(*jt)->getClusterPosition().y())<50 )
 	count++;
     }
     if(count>=3){
-      streamlog_out( DEBUG ) << "an interaction has been found in layer " << (*it)->getClusterPosition().z() << std::endl;
+      streamlog_out( DEBUG ) << "an interaction has been found in layer " << (*it)->getLayerID() << std::endl;
       return true;
     }
   }

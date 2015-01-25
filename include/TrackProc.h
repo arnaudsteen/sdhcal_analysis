@@ -127,6 +127,8 @@ class TrackProc : public Processor {
   float _mulGlobal;
   float _chi2Global;
   std::vector<int> clusterSize;
+  float _mulGlobal3[48];
+  float _countGlobal3[48];
 } ;
 
 #endif

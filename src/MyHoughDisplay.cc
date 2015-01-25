@@ -126,6 +126,20 @@ void MyHoughDisplayProc::doHoughTracking()
   Hough *hough = new Hough();
   hough->Init( isolClusVec );
   hough->ComputeHoughTransform();
+  for(std::vector<Track*>::iterator it=hough->ReturnTracks().begin(); it!=hough->ReturnTracks().end(); ++it){
+    TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
+    aTrackCaracteristics->Init(*it);
+    aTrackCaracteristics->ComputeTrackCaracteritics();
+    aTrackCaracteristics->PrintTrackInfo();
+  //    TrackLength.push_back(aTrackCaracteristics->ReturnTrackLength());
+  //    trackNclusters.push_back(aTrackCaracteristics->ReturnTrackNumberOfClusters());
+  //    std::vector<int> clsize=aTrackCaracteristics->ReturnTrackClustersSize();
+  //    trackclSize.insert(trackclSize.begin(),clsize.begin(),clsize.end());
+  //    nhough1+=aTrackCaracteristics->ReturnTrackNhit()[1];
+  //    nhough2+=aTrackCaracteristics->ReturnTrackNhit()[2];
+  //    nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
+    delete aTrackCaracteristics;
+  }
   end=clock();
   streamlog_out( MESSAGE ) << "time to perform hough transform tracking = " << ( (float)end-(float)start)/CLOCKS_PER_SEC << " seconds " << std::endl;
   //for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
@@ -229,7 +243,10 @@ void MyHoughDisplayProc::drawEventDisplay()
   hMip_y->Draw("same");
   hTrack_y->Draw("same");
   hIsolated_y->Draw("same");
-  can->WaitPrimitive();
+
+  can->Update();
+  sleep(5);
+  //can->WaitPrimitive();
   resetHisto();
 }
 
@@ -253,14 +270,14 @@ void MyHoughDisplayProc::processEvent( LCEvent * evt )
 	calohit.push_back(hit);
       }
       //  UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
-      //if(numElements>200){
+      if(numElements>200){
 	doClusters();
 	doHoughTracking();
 	drawEventDisplay();
 	for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
 	  delete *it;
 	clusters.clear();
-	//}
+      }
       calohit.clear();
     }
     catch(DataNotAvailableException &e){ 

@@ -142,6 +142,8 @@ class ShowerProcessor : public Processor {
   int zend;
   float radius;
   float maxradius;
+  float length;
+  float aparatureAngle;
   float energy_;
   int hole;
   float cog[4];

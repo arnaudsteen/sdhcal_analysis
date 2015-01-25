@@ -41,6 +41,8 @@ class Track
  public : 
   //hough methods
   void AddClusters(std::vector<Cluster*> &clVec);
+  inline void RemoveCluster(Cluster* cl) {clusters.erase(std::find(clusters.begin(),clusters.end(),cl));}//WARNING NE MARCHE PAS
+  inline void RemoveCluster(std::vector<Cluster*>::iterator it) {clusters.erase(it);}
   void setHTParameters(float par[4]);
   inline void addRejectedClusters(Cluster* cluster){rejectedClusters.push_back(cluster);}
   inline std::vector<Cluster*> &getRejectedClusters(){return rejectedClusters;}
@@ -81,6 +83,10 @@ class TrackCaracteristics
   inline std::vector<int>& ReturnTrackClustersSize(){return clustersSize;}
   inline ThreeVector& ReturnTrackFirstPoint(){return firstP;}
   inline ThreeVector& ReturnTrackLastPoint(){return lastP;}
+  inline void PrintTrackInfo(){std::cout << " chi2 = " << _theTrack->getChi2() << "\t"
+					 << " number of clusters = " << _theTrack->getClusters().size() << "\t" 
+					 << " length = " << length
+					 << std::endl;}
   inline void PrintTrackParameters(){std::cout << "x = a*z+b; a = " << _theTrack->getTrackParameters()[1] << " \t b = " << _theTrack->getTrackParameters()[0] << "\n"
 					       << "y = c*z+d; c = " << _theTrack->getTrackParameters()[3] << " \t d = " << _theTrack->getTrackParameters()[2] << std::endl;}
  private : 
