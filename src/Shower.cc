@@ -223,25 +223,26 @@ int Shower::NInteractingLayer()
   for(int iK=0; iK<50; iK++){
     float x=0;
     float y=0;
+    float x2=0;
+    float y2=0;
     int count=0;
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
       if(iK==idDecoder(*it)["K-1"]){  
 	x+=(*it)->getPosition()[0];
 	y+=(*it)->getPosition()[1];
+	x2+=(*it)->getPosition()[0]*(*it)->getPosition()[0];
+	y2+=(*it)->getPosition()[1]*(*it)->getPosition()[1];
 	count++;
       }
     }
-    float meanx=x/count;
-    float meany=y/count;
-    float rms=0;
-    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
-      if(iK==idDecoder(*it)["K-1"]){  
-	rms+=( (meanx-x)*(meanx-x) +
-	       (meany-y)*(meany-y) );
-      }
+    x=x/count;
+    y=y/count;
+    x2=x2/count-x*x;
+    y2=y2/count-y*y;
+    if(sqrt(x2+y2)>45&&count>5){
+      nlayer++;
+      streamlog_out( DEBUG ) << "layer number " << iK << " has an interaction \t rms = " << sqrt(x2+y2) << std::endl;
     }
-    rms=sqrt(rms/count);
-    if(rms>6&&count>5) nlayer++;
   }
   return nlayer;
 }
