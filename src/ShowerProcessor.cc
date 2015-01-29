@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include <cmath>
+#include <time.h>
 
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
@@ -344,16 +345,6 @@ void ShowerProcessor::ShowerAnalysis()
   nhough3=0;
   Shower* shower=(*theShowers.begin());
   shower->FindClustersInLayer();
-  clusterIsolated=0;
-  nlayer=shower->Nlayer();
-  for(std::vector<Cluster*>::iterator clit=shower->getClusters().begin(); clit!=shower->getClusters().end(); ++clit){
-    (*clit)->IsolatedCluster(shower->getClusters());
-    if( (*clit)->isIsolated() ){
-      clusterIsolated++;
-      if(calohit.size()>100) streamlog_out( DEBUG ) << "found an isolated cluster at : " << (*clit)->getClusterPosition()  << "\t" 
-						    << "with " << (*clit)->getHits().size() << " hits " << std::endl;
-    }
-  }
   shower->FindShowerBarycenter();
   for(int i=0;i<4;i++){
     //find nan problem
@@ -363,14 +354,31 @@ void ShowerProcessor::ShowerAnalysis()
       return;
     }
   }
-  std::vector<Cluster*> isolClusVec=shower->getIsolatedClusters();
-  //shower->setEfficiencyMap(_effMap);
-  //shower->setMeanEfficiency(_meanEfficiency);
-  //shower->setMultiplicityMap(_mulMap);
-  //shower->setMeanMultiplicity(_meanMultiplicity);
+
+  shower->MakeAnalysisInOneLoop();
+  nhit1=shower->getNumberOfHits()[0];
+  nhit2=shower->getNumberOfHits()[1];
+  nhit3=shower->getNumberOfHits()[2];
+  nhit=nhit1+nhit2+nhit3;
+  nlayer=shower->Nlayer();
+  radius=shower->Radius();
+  ninteractinglayer=shower->NInteractingLayer();
+  transverseRatio=shower->TransverseRatio();  
+  for(int i=0;i<4;i++)
+    cog[i]=shower->getShowerBarycenter()[i];
+  ThreeVector px(-1,0,cog[1]);
+  ThreeVector py(0,-1,cog[3]);
+  ThreeVector _reconstructedMomentum=px.cross(py);
+  _reconstructedCosTheta= (px.cross(py)).cosTheta();
+  centralRatio=shower->CentralHitRatio();
+  fractaldim=shower->FractalDimension();
+  neutral=shower->NeutralShower();
+  singlePart=shower->FirstLayerRMS();
+
+  std::vector<Cluster*> MIPClusVec=shower->getMIPClusters();
   if(!NOT_FULL_ANALYSIS){
     Hough *hough = new Hough();
-    hough->Init( isolClusVec );
+    hough->Init( MIPClusVec );
     hough->ComputeHoughTransform();
     shower->setTracks( hough->ReturnTracks() );
     //    shower->LayerProperties();
@@ -391,24 +399,23 @@ void ShowerProcessor::ShowerAnalysis()
       nhough3+=aTrackCaracteristics->ReturnTrackNhit()[3];
       delete aTrackCaracteristics;
     }
-    //if(begin<0)
-    //  begin=shower->TryAgainToFindShowerStartingLayer();
     delete hough;
     //density=shower->Density();
   }
   begin=shower->FirstIntLayer();
-  clusterMips=isolClusVec.size();
-  isolClusVec.clear();
+  hole=shower->holeFinder(begin);
+  maxradius=shower->RadiusAtShowerMax();
+  length=shower->ShowerLength();
+  aparatureAngle=atan(maxradius/length);
+  
+  clusterMips=MIPClusVec.size();
+  MIPClusVec.clear();
   nclusters=shower->getClusters().size();
-  shower->HitNumber();
-  nhit=shower->getNumberOfHits()[0];
-  nhit1=shower->getNumberOfHits()[1];
-  nhit2=shower->getNumberOfHits()[2];
-  nhit3=shower->getNumberOfHits()[3];
-  nlayer=shower->Nlayer();
-  ninteractinglayer=shower->NInteractingLayer();
+  clusterEM=shower->ClusterEMNumber();
+  meanClusterSize=shower->MeanClusterSize(); 
+
+  //Profile
   shower->LongitudinalProfile(begin);
-  shower->LongitudinalProfileBis();
   shower->ClusterRadialProfile();
   shower->RadialProfile(begin);
   for(int i=0;i<48;i++){
@@ -420,30 +427,7 @@ void ShowerProcessor::ShowerAnalysis()
     clusterRadialProfile[48+i]=shower->getClusterRadialProfile()[48+i];
     radialProfileBis[i]=shower->getRadialProfileBis()[i];
     radialProfileBis[48+i]=shower->getRadialProfileBis()[48+i];
-    //radialProfilePlus[i]=shower->getRadialProfilePlus()[i];
-    //radialProfilePlus[48+i]=shower->getRadialProfilePlus()[48+i];
-    //radialProfileMinus[i]=shower->getRadialProfileMinus()[i];
-    //radialProfileMinus[48+i]=shower->getRadialProfileMinus()[48+i];
   }
-  hole=shower->holeFinder(begin);
-  for(int i=0;i<4;i++)
-    cog[i]=shower->getShowerBarycenter()[i];
-  
-  ThreeVector px(-1,0,cog[1]);
-  ThreeVector py(0,-1,cog[3]);
-  ThreeVector _reconstructedMomentum=px.cross(py);
-  _reconstructedCosTheta= (px.cross(py)).cosTheta();
-  radius=shower->Radius(begin);
-  centralRatio=shower->CentralHitRatio();
-  fractaldim=shower->FractalDimension();
-  neutral=shower->NeutralShower();
-  clusterEM=shower->ClusterEMNumber();
-  meanClusterSize=shower->MeanClusterSize(); 
-  singlePart=shower->FirstLayerRMS();
-  transverseRatio=shower->TransverseRatio();
-  maxradius=shower->RadiusAtShowerMax();
-  length=shower->ShowerLength();
-  aparatureAngle=atan(maxradius/length);
 }
 
 void ShowerProcessor::processRunHeader( LCRunHeader* run)

@@ -14,6 +14,7 @@
 #include "PCA.hh"
 #include "Distance.h"
 #include "Layer.h"
+#include "ShowerAnalysisInOneLoop.h"
 
 const float dCut=15.0;
 
@@ -22,17 +23,15 @@ class Shower
  public:
   Shower();
   ~Shower();
-  void BuildShower(std::vector<EVENT::CalorimeterHit*> &temp,std::vector<EVENT::CalorimeterHit*> &calohit,EVENT::CalorimeterHit* &hit);
   void FindClustersInLayer();
-  std::vector<Cluster*> getIsolatedClusters();
+  std::vector<Cluster*> getMIPClusters();
   void FindShowerBarycenter();
+  void MakeAnalysisInOneLoop();
   int FirstIntLayer();
-  void HitNumber();
-  int Nlayer();
-  int NInteractingLayer();
-  float Radius(int begin);
-  void LongitudinalProfile(int Zbegin,bool show=false); //relative to shower starting layer
-  void LongitudinalProfileBis(bool show=false); //relative to calorimeter front
+  //  void HitNumber();
+  int Nlayer(){return nhitInLayer.size();}
+  int NInteractingLayer(){return nInteractingLayer;}
+  void LongitudinalProfile(int Zbegin,bool show=false); 
   void RadialProfile(int firstIntLayer, bool show=false);
   void ClusterRadialProfile(bool show=false);
   float CentralHitRatio();
@@ -47,7 +46,7 @@ class Shower
   int findAsicKey(const int layer,const float *par);
   int findAsicKey(EVENT::CalorimeterHit* hit);
   int findAsicKey(Cluster* cluster);
-  float TransverseRatio();
+  float TransverseRatio(){return transverseRatio;}
   void LayerProperties(bool DATA);
   float RadiusAtShowerMax();
   float ShowerLength();
@@ -77,6 +76,7 @@ class Shower
   inline int* getRadialProfileBis(){return radialProfileBis;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
 
+  float Radius(){return radius;}
  private:
   int shID;
   std::vector<EVENT::CalorimeterHit*> hits;
@@ -96,6 +96,8 @@ class Shower
   float transverseRatio;
   ThreeVector showerStartingClusterPosition;
   ThreeVector aShowerClusterPositionAtMax;
+  int nInteractingLayer;
+  float radius;
 };
 
 class ShowerClassFunction{

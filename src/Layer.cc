@@ -53,6 +53,18 @@ void Layer::Init(std::vector<Cluster*> &clVec)
   }
   if(clusters.size()+clustersInLayer.size()!=clVec.size())
     streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=clVec.size()" << std::endl;
+
+  
+  //streamlog_out( MESSAGE ) << "Other layers : ";
+  //for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
+  //  streamlog_out( MESSAGE ) << (*it)->getLayerID() << "\t" ;
+  //streamlog_out( MESSAGE ) << std::endl;
+  //
+  //streamlog_out( MESSAGE ) << "MY LAYER  : ";
+  //for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it)
+  //  streamlog_out( MESSAGE ) << (*it)->getLayerID() << "\t" ;
+  //streamlog_out( MESSAGE ) << std::endl;
+  
 }
 
 void Layer::Init(Track* aTrack)
@@ -109,7 +121,7 @@ void Layer::ComputeLayerProperties()
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 1" << std::endl;throw;}
       new_dist=dist->CalculateDistance(*it);
       if( new_dist<old_dist ){
 	closestIt=it;
@@ -258,7 +270,7 @@ void LayerInShower::ComputeShowerLayerProperties()
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
     old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;return;}
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 2" << std::endl;return;}
       new_dist=dist->CalculateDistance(*it);
       if( new_dist<old_dist ){
 	closestIt=it;
@@ -292,7 +304,7 @@ bool LayerInShower::CheckIfTrueUnfficientLayer()
     return true;  
   std::vector<Cluster*>::iterator closestIt=clustersInShower.begin();
   for(std::vector<Cluster*>::iterator it=clustersInShower.begin(); it!=clustersInShower.end(); ++it){
-    if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
+    if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 3" << std::endl;
       return false;
     }
     if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
@@ -325,9 +337,8 @@ void LayerForThrScan::ComputeLayerProperties()
     streamlog_out( DEBUG ) << "layID = " << layID << "\t"
 			   << "aTrackCaracteristics->ReturnTrackFirstPoint().z() = " << aTrackCaracteristics->ReturnTrackFirstPoint().z() << "\t"
 			   << "aTrackCaracteristics->ReturnTrackLastPoint().z() = " <<  aTrackCaracteristics->ReturnTrackLastPoint().z() << std::endl;
-    if( layID>0 && layID<47 )
-      if( layID<aTrackCaracteristics->ReturnTrackFirstPoint().z()||
-	  layID>aTrackCaracteristics->ReturnTrackLastPoint().z() ){
+    if( layerZPosition<aTrackCaracteristics->ReturnTrackFirstPoint().z()||
+	layerZPosition>aTrackCaracteristics->ReturnTrackLastPoint().z() ){
 	delete aTrackingAlgo;
 	delete aTrackCaracteristics;
 	return;
@@ -354,8 +365,8 @@ void LayerForThrScan::ComputeLayerProperties()
     
     std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( (*it)->getClusterPosition().z() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;
-	return;
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 4" << std::endl;
+	throw;
       }
       if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
 	  fabs((*it)->getClusterPosition().y()-yExpected) < fabs((*closestIt)->getClusterPosition().y()-yExpected) ) 
