@@ -50,11 +50,6 @@ SimulationThresholdScanProc::SimulationThresholdScanProc() : Processor("Simulati
 			    _outputRelCollection , 
 			    std::string("RelationCalorimeterHit")) ; 
 
-  registerProcessorParameter( "deadCellFile" ,
-			      "file where dead cell are stored",
-			      deadCellFile,
-			      std::string("deadCell.txt"));
-
   std::vector<int> hcalLayers;
   hcalLayers.push_back(48);
   registerProcessorParameter("HCALLayers" , 
@@ -72,39 +67,26 @@ SimulationThresholdScanProc::SimulationThresholdScanProc() : Processor("Simulati
 			      "number of different used threshold value",
 			      _nThr, 
 			      (int) 200 );
-
-  registerProcessorParameter( "PolyaAverageCharge" ,
-			      "Parameter for the Polya distribution used to simulate the induced charge distribution : mean of the distribution", 
-			      _polyaAverageCharge, 
-			      (double) 5.596 );
-  
-  registerProcessorParameter( "PolyaWidthParameter" ,
-			      "Parameter for the Polya distribution used to simulate the induced charge distribution : related to the distribution width ",
-			      _polyaFunctionWidthParamater, 
-			      (double) 1.021 );
   
   registerProcessorParameter( "TxtOutputName" ,
 			      "Name of the txt file where the results are stored",
 			      TxtOutputName, 
 			      std::string("output.txt") );
 
-  std::vector<float> erfWidth;
-  erfWidth.push_back(1.);
-  erfWidth.push_back(12);
-  erfWidth.push_back(100);
-  registerProcessorParameter( "erfWidth",
-			      "Width values for the different Erf functions",
-			      _erfWidth,
-			      erfWidth );
+  registerProcessorParameter( "TransverseRatioCut" ,
+			      "maximum accepted value on transverse ratio obtain thanks to pca",
+			      _transverseRatioCut, 
+			      float(0.1));
 
-  std::vector<float> erfWeight;
-  erfWeight.push_back(1);
-  erfWeight.push_back(0.0005);
-  erfWeight.push_back(0.000005);
-  registerProcessorParameter( "erfWeight",
-			      "Weigth for the different Erf functions",
-			      _erfWeight,
-			      erfWeight );
+  registerProcessorParameter( "Chi2Cut" ,
+			      "maximum accepted value on track chi2 obtain with linear fit",
+			      _chi2Cut, 
+			      float(5.0));
+
+  registerProcessorParameter( "CosThetaCut" ,
+			      "minimum accepted value on track cos(theta)",
+			      _cosThetaCut, 
+			      float(0.9));
 }
 
 void SimulationThresholdScanProc::init()
@@ -117,160 +99,170 @@ void SimulationThresholdScanProc::init()
   eff=new double[_nThr];
   thr=new double[_nThr];
   multi=new double[_nThr];
-  std::cout << "ok; " << _nThr << std::endl;
-  std::cout << eff[0] << std::endl;
-  std::cout << eff[1] << std::endl;
+  counter=new double[_nThr];
   for(int i=0; i<_nThr; i++){
     thr[i]=i/10.0+0.1;
     eff[i]=0;
     multi[i]=0;
+    counter[i]=0;
   }
   UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
-
-
-  //    sprintf(outName,"%s%d%s","/gridgroup/ilc/Arnaud/MyAnalysis/TXTFile/simThresholdScan_Layer",_layer,".txt");
-  output.open(TxtOutputName.c_str(),std::fstream::out);
-  output << "##Polya parameters ==> " 
-	 << " average : " << _polyaAverageCharge 
-	 << " ; width : " << _polyaFunctionWidthParamater << std::endl;
-  output << "##Erf width : " ;
-  for(unsigned int i=0; i<_erfWidth.size(); i++)
-    output << _erfWidth[i] << "  " ;
-  output << std::endl;
-  output << "##Erf weight : " ;
-  for(unsigned int i=0; i<_erfWeight.size(); i++)
-    output << _erfWeight[i] << "  "  ;
-  output << std::endl;
-  output << std::endl;
-  output.close();
-  FindDeadCell();
 }
 
 
-std::vector<Analog_Cluster*> SimulationThresholdScanProc::GetClusters()
+void SimulationThresholdScanProc::doTrackStudy()
 {
-  float defaultThr=0.114;
-  std::vector<Analog_Cluster*> vec;
+  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
+  streamlog_out( DEBUG ) << "numElements = " << numElements << std::endl;
+  clusters.clear();
   std::vector<EVENT::CalorimeterHit*> _temp;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int ID=0;
+  int nclusters=0;
+  Cluster* cluster=NULL;
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    int K=idDecoder(*it)["K-1"];
-    if( std::find(_layers.begin(),_layers.end(),K ) != _layers.end() || (*it)->getEnergy()<defaultThr ) continue;
-    if( std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end() ) continue;
-    Analog_Cluster *cl=new Analog_Cluster(defaultThr);
-    cl->AddHits(*it);
+    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
+    cluster=new Cluster(IDdecoder(*it)["K-1"]);
+    nclusters++;
+    cluster->AddHits(*it);
     ID+=1;
     _temp.push_back(*it);
-    cl->BuildCluster(_temp,calohit, (*it));
-    cl->buildClusterPosition();
-    cl->setClusterID(ID);
-    vec.push_back(cl);
+    cluster->BuildCluster(_temp,calohit, (*it));
+    cluster->buildClusterPosition();
+    cluster->setClusterID(ID);
+    clusters.push_back(cluster);
   }
-  for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it)
-    (*it)->IsolatedCluster(vec);
-  
-  //vec.erase( std::remove_if(vec.begin(),vec.end(),BigCluster), vec.end() );
-  for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it){
+  std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
+    (*it)->IsolatedCluster(clusters);
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     if( (*it)->isIsolated() ){
-      delete *it;
-      vec.erase(it);
+      streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition().x() << " " << (*it)->getClusterPosition().y() << " " << (*it)->getClusterPosition().z() 
+			     << " is isolated and rejected" << std::endl;
+      delete *it; 
+      clusters.erase(it); 
       it--;
     }
   }
-  return vec;
+
+  if(clusters.size()>5){
+    if(TrackSelection()){
+      //fillHisto();
+      LayerProperties();
+    }
+  }
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    delete *it;
+  }
+
 }
 
-//------------------------------------------------------------------------------------------------------------------------
-
-void SimulationThresholdScanProc::Efficiency()
+bool SimulationThresholdScanProc::TrackSelection()
 {
-  std::vector<ThreeVector> pos;
-  std::vector<int> clSize;
+  TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
+  aTrackingAlgo->Init(clusters);
+  aTrackingAlgo->DoTracking();
+  if(aTrackingAlgo->TrackFinderSuccess()){
+    Track* aTrack=aTrackingAlgo->ReturnTrack();
+    TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
+    aTrackCaracteristics->Init(aTrack);
+    aTrackCaracteristics->ComputeTrackCaracteritics();
+    _chi2=aTrackCaracteristics->ReturnTrackChi2();
+    _cosTheta=aTrackCaracteristics->ReturnTrackCosTheta();
+    _nlayer=aTrackCaracteristics->ReturnTrackNlayer();
+    _transverseRatio=aTrackingAlgo->getTransverseRatio();
+    delete aTrackCaracteristics;
+    delete aTrackingAlgo;
+  }
+  else{
+    delete aTrackingAlgo; 
+    return false;
+  }
   
-  for(std::vector<Analog_Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
-    pos.push_back((*it)->getClusterPosition());
-    clSize.push_back( (*it)->getHits().size() );
+  if( _chi2<_chi2Cut &&
+      _transverseRatio < _transverseRatioCut &&
+      _cosTheta > _cosThetaCut ){
+    return true;
   }
-  Linear3DFit* fit=new Linear3DFit(pos,clSize);
-  fit->Fit();
-  float *par=fit->GetFitParameters();
-  streamlog_out( DEBUG ) << par[0] << " " << par[1] << "\n"
-			 << par[2] << " " << par[3] << std::endl;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-  for(int i=0; i<_nThr; i++){
-    for(std::vector<int>::iterator jt=_layers.begin(); jt!=_layers.end(); ++jt){
-      std::vector<Analog_Cluster*> vec;
-      std::vector<EVENT::CalorimeterHit*> _temp;
-      for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-	if( std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end() ) continue;
-	if(idDecoder(*it)["K-1"]==(*jt)&&
-	   (*it)->getEnergy()>thr[i]){
-	  Analog_Cluster* cl=new Analog_Cluster(thr[i]);
-	  cl->AddHits(*it);
-	  _temp.push_back(*it);
-	  cl->BuildCluster(_temp,calohit, (*it));
-	  cl->buildClusterPosition();
-	  vec.push_back(cl);
-	}
-      }
-      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it)
-	(*it)->IsolatedCluster(clVec);
-      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it){
-	if( (*it)->isIsolated() ){
-	  delete *it;
-	  vec.erase(it);
-	  it--;
-	}
-      }
-      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it){
-	if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*jt)+par[0]) )<2 &&
-	    fabs( (*it)->getClusterPosition().y()-(par[3]*(*jt)+par[2]) )<2 ){
-	  eff[i]++;
-	  multi[i]+=(*it)->getHits().size();
-	  break;
-	}
-      }
-      _temp.clear();
-      vec.clear();
-    }
-  }
+  return false;
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
-void SimulationThresholdScanProc::FindDeadCell()
+void SimulationThresholdScanProc::LayerProperties()
 {
-  deadCellKey.clear();
-  fstream in;
-  in.open(deadCellFile.c_str(),std::ios::in);
-  int I=0; int J=0; int K=0;
-  // key=100000*k+100*j+i
-  // i=key%100;
-  // j=key/100%100;
-  // k=key/10000;
-  if(!in.is_open()) return;
-  while(!in.eof()){
-    in >> K >> I >> J;
-    deadCellKey.push_back(100*100*K+100*J+I);
-    streamlog_out( DEBUG ) << deadCellKey.back() << std::endl;
+  for(std::vector<int>::iterator it=_layers.begin(); it!=_layers.end(); ++it){
+    LayerForSimulationThrScan* aLayerForSimulationThrScan=new LayerForSimulationThrScan(*it);
+    aLayerForSimulationThrScan->Init(clusters);
+    if(aLayerForSimulationThrScan->BuildTrackAndReturnSuccess()){
+      for(int i=0; i<_nThr; i++){
+	aLayerForSimulationThrScan->ComputeLayerProperties(thr[i]);
+	if(aLayerForSimulationThrScan->getLayerTag()==fEfficientLayer){
+	  eff[i]++;
+	  multi[i]+=aLayerForSimulationThrScan->getMultiplicity();
+	  counter[i]++;
+	}
+	else counter[i]++;
+      }
+    }
+    delete aLayerForSimulationThrScan;
   }
 }
 
-void SimulationThresholdScanProc::RemoveDeadCell()
-{
-  int key=0;
-  UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    key=100*100*IDdecoder(*it)["K-1"]+100*IDdecoder(*it)["J"]+IDdecoder(*it)["I"];
-    if(std::find(deadCellKey.begin(), deadCellKey.end(), key)!=deadCellKey.end()){
-      streamlog_out( DEBUG ) << IDdecoder(*it)["K-1"] << "\t" << IDdecoder(*it)["I"] << "\t" << IDdecoder(*it)["J"] << std::endl;
-      calohit.erase(it);
-      it--;
-    }
-  }
-  //if(deadCellHit>0) streamlog_out( MESSAGE )<< "dead cell number=" << deadCellHit << std::endl;
-}
+//void SimulationThresholdScanProc::Efficiency()
+//{
+//  std::vector<ThreeVector> pos;
+//  std::vector<int> clSize;
+//  
+//  for(std::vector<Analog_Cluster*>::iterator it=clVec.begin(); it!=clVec.end(); ++it){
+//    pos.push_back((*it)->getClusterPosition());
+//    clSize.push_back( (*it)->getHits().size() );
+//  }
+//  Linear3DFit* fit=new Linear3DFit(pos,clSize);
+//  fit->Fit();
+//  float *par=fit->GetFitParameters();
+//  streamlog_out( DEBUG ) << par[0] << " " << par[1] << "\n"
+//			 << par[2] << " " << par[3] << std::endl;
+//  UTIL::CellIDDecoder<EVENT::CalorimeterHit> idDecoder("M:3,S-1:3,I:9,J:9,K-1:6");
+//  for(int i=0; i<_nThr; i++){
+//    for(std::vector<int>::iterator jt=_layers.begin(); jt!=_layers.end(); ++jt){
+//      std::vector<Analog_Cluster*> vec;
+//      std::vector<EVENT::CalorimeterHit*> _temp;
+//      for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
+//	if( std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end() ) continue;
+//	if(idDecoder(*it)["K-1"]==(*jt)&&
+//	   (*it)->getEnergy()>thr[i]){
+//	  Analog_Cluster* cl=new Analog_Cluster(thr[i]);
+//	  cl->AddHits(*it);
+//	  _temp.push_back(*it);
+//	  cl->BuildCluster(_temp,calohit, (*it));
+//	  cl->buildClusterPosition();
+//	  vec.push_back(cl);
+//	}
+//      }
+//      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it)
+//	(*it)->IsolatedCluster(clVec);
+//      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it){
+//	if( (*it)->isIsolated() ){
+//	  delete *it;
+//	  vec.erase(it);
+//	  it--;
+//	}
+//      }
+//      for(std::vector<Analog_Cluster*>::iterator it=vec.begin(); it!=vec.end(); ++it){
+//	if( fabs( (*it)->getClusterPosition().x()-(par[1]*(*jt)+par[0]) )<2 &&
+//	    fabs( (*it)->getClusterPosition().y()-(par[3]*(*jt)+par[2]) )<2 ){
+//	  eff[i]++;
+//	  multi[i]+=(*it)->getHits().size();
+//	  break;
+//	}
+//      }
+//      _temp.clear();
+//      vec.clear();
+//    }
+//  }
+//}
+
+//------------------------------------------------------------------------------------------------------------------------
 
 void SimulationThresholdScanProc::processRunHeader( LCRunHeader* run)
 {
@@ -293,15 +285,13 @@ void SimulationThresholdScanProc::processEvent( LCEvent * evt )
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       calohit.clear();
-      clVec.clear();
+      clusters.clear();
       for (int j=0; j < numElements; ++j) {
 	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
 	calohit.push_back(hit);
       }
       UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
-      RemoveDeadCell();
-      clVec=GetClusters();
-      Efficiency();
+      doTrackStudy();
     }
     catch(DataNotAvailableException &e){ 
       std::cout << "Exeption " << std::endl;
@@ -320,12 +310,13 @@ void SimulationThresholdScanProc::check( LCEvent * evt ) {
 //------------------------------------------------------------------------------------------------------------------------
 
 void SimulationThresholdScanProc::end(){ 
-  output.open(TxtOutputName.c_str(),std::fstream::out | std::fstream::app);
+  output.open(TxtOutputName.c_str(),std::fstream::out);
   for(int i=0; i<_nThr; i++){
-    if(eff[i]>0)
+    if(eff[i]>0){
       multi[i]=multi[i]/eff[i];
-    eff[i]=eff[i]/(_nEvt*_layers.size());
-    output << thr[i] << " " << eff[i] << " " << multi[i] << std::endl;
+    }
+    eff[i]=eff[i]/counter[i];
+    output << thr[i] << " " << " " << counter[i] << " " << eff[i] << " " << multi[i] << std::endl;
   }
   output.close();
   std::cout << "SimulationThresholdScanProc::end()  " << name() 

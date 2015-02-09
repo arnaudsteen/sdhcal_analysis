@@ -13,6 +13,8 @@
 
 #include "Linear3DFit.hh"
 #include "Cluster.h"
+#include "Layer.h"
+#include "TrackingAlgo.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -47,11 +49,9 @@ class SimulationThresholdScanProc : public Processor {
   /** Called after data processing for clean up.
    */
   virtual void end() ;
-  virtual void FindDeadCell();
-  virtual void RemoveDeadCell();
-  
-  std::vector<Analog_Cluster*> GetClusters();
-  void Efficiency();
+  virtual void doTrackStudy();
+  virtual bool TrackSelection();
+  virtual void LayerProperties();
  protected:
 
   int _nRun ;
@@ -65,32 +65,31 @@ class SimulationThresholdScanProc : public Processor {
   
   int _digitalHcal;
 
-  std::vector<float> _calibrCoeffHcal;
-  std::string deadCellFile;
 
   std::vector<int> _hcalLayers;
   std::vector<EVENT::CalorimeterHit*> calohit;
-  std::vector<Analog_Cluster*> clVec;
-  std::vector<int> deadCellKey;
+  std::vector<Cluster*> clusters;
 
-  double _polyaAverageCharge;
-  double _polyaFunctionWidthParamater;
-  std::vector<float> _erfWidth;
-  std::vector<float> _erfWeight;
   std::vector<int> _layers;
-  int _nThr;
 
  private:
   int numElements;
   LCCollection * col;
-  //char outName[200];
   std::string TxtOutputName;
   std::fstream output;
   
   double *eff;
   double *multi;
   double *thr;
-  
+  double *counter;
+  int _nlayer;
+  int _nThr;
+  float _cosTheta;
+  float _chi2;
+  float _transverseRatio;
+  float _chi2Cut;
+  float _transverseRatioCut;
+  float _cosThetaCut;
 } ;
 
 #endif

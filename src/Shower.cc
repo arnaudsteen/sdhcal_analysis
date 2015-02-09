@@ -131,7 +131,7 @@ int Shower::FirstIntLayer()
 	float ybary_tr=trackPar[2]+trackPar[3]*(*trackIt)->getTrackStartingCluster()->getClusterPosition().z();
 	if( px.cross(py).cosTheta()>0.9 ){
 	  streamlog_out( DEBUG ) << "the track is still good candidate" << std::endl;
-	  begin=(*trackIt)->getTrackLastCluster()->getLayerID()+1;
+	  begin=(*trackIt)->getTrackLastCluster()->getLayerID();
 	  bool ok=false;
 	  for(std::vector<Cluster*>::iterator clit=clusters.begin(); clit!=clusters.end(); ++clit){
 	    if( (*clit)->getLayerID()<begin || 

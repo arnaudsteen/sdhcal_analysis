@@ -320,12 +320,17 @@ bool LayerInShower::CheckIfTrueUnfficientLayer()
   return true;
 }
 
+//---------------------------------------------------------------------------------------------------------------------------------------------------------
+
 LayerForThrScan::LayerForThrScan(int ID, int level) : Layer(ID), thrLevel(level)
 {
 }
 
 void LayerForThrScan::ComputeLayerProperties()
 {
+  float old_dist=0;
+  float new_dist=0;
+  if(clusters.size()<5) return;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
   aTrackingAlgo->DoTracking();
@@ -334,24 +339,23 @@ void LayerForThrScan::ComputeLayerProperties()
     TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
     aTrackCaracteristics->Init(aTrack);
     aTrackCaracteristics->ComputeTrackCaracteritics();
-    streamlog_out( DEBUG ) << "layID = " << layID << "\t"
-			   << "aTrackCaracteristics->ReturnTrackFirstPoint().z() = " << aTrackCaracteristics->ReturnTrackFirstPoint().z() << "\t"
-			   << "aTrackCaracteristics->ReturnTrackLastPoint().z() = " <<  aTrackCaracteristics->ReturnTrackLastPoint().z() << std::endl;
     if( layerZPosition<aTrackCaracteristics->ReturnTrackFirstPoint().z()||
 	layerZPosition>aTrackCaracteristics->ReturnTrackLastPoint().z() ){
 	delete aTrackingAlgo;
 	delete aTrackCaracteristics;
 	return;
       }
-
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
-    yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
+    chi2=aTrack->getChi2();
+    xExpected=aTrack->getTrackParameters()[1]*layerZPosition+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layerZPosition+aTrack->getTrackParameters()[2];
     if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
-      delete aTrackCaracteristics;
-      streamlog_out( DEBUG ) << "layer " << layID << " is undefined " << std::endl;
+      streamlog_out( DEBUG ) << "layer " << layID << " is undefined/outside " 
+			     << "xExpected = " << xExpected << "\t"
+			     << "yExpected = " << yExpected << "\t"
+			     << "layerZPosition = " << layerZPosition << std::endl;
       return;
     }
     this->setLayerTag(fInsideLayerImpact); 
@@ -359,34 +363,31 @@ void LayerForThrScan::ComputeLayerProperties()
       streamlog_out( DEBUG ) << "find one empty layer = " << layID << std::endl;
       this->setLayerTag(fUnefficientLayer);
       delete aTrackingAlgo;
-      delete aTrackCaracteristics;
       return;
     }
-    
-    std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();;
+    DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
+    dist->Init(aTrack->getTrackParameters());
+    std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
+    old_dist=dist->CalculateDistance(*closestIt);
     for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
-      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 4" << std::endl;
-	throw;
-      }
-      if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
-	  fabs((*it)->getClusterPosition().y()-yExpected) < fabs((*closestIt)->getClusterPosition().y()-yExpected) ) 
+      if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 1" << std::endl;throw;}
+      new_dist=dist->CalculateDistance(*it);
+      if( new_dist<old_dist ){
 	closestIt=it;
+	old_dist=new_dist;
+      }
     }
+    delete dist;
+    DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
+    distHit->Init(aTrack->getTrackParameters());
     for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-      if( sqrt( pow( (*it)->getPosition()[0]-(xExpected),2 ) + pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= effDistanceCut &&
-	  (int)(*it)->getEnergy()>=thrLevel ){
-	this->setLayerTag(fEfficientLayer);
+      if( distHit->CalculateDistance(*it) < effDistanceCut && (int)(*it)->getEnergy()>=thrLevel ){
+	setLayerTag(fEfficientLayer);
 	multiplicity++;
       }
     }
-    if(layerTag!=fEfficientLayer){
-      this->setLayerTag(fUnefficientLayer);
-      streamlog_out( DEBUG ) << "find one unefficient layer = " << layID << " because cluster found is too far : " 
-			     << sqrt( ((*closestIt)->getClusterPosition().x()-xExpected)*((*closestIt)->getClusterPosition().x()-xExpected) +
-				      ((*closestIt)->getClusterPosition().y()-yExpected)*((*closestIt)->getClusterPosition().y()-yExpected) )
-			     << std::endl;
-    }
-    delete aTrackCaracteristics;
+    delete distHit;
+    if(layerTag!=fEfficientLayer) setLayerTag(fUnefficientLayer);
     chi2=aTrack->getChi2();
   }
   else{
@@ -394,4 +395,109 @@ void LayerForThrScan::ComputeLayerProperties()
       streamlog_out( ERROR ) << layID << " layer should be undefined" << std::endl;
   }
   delete aTrackingAlgo;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+LayerForSimulationThrScan::LayerForSimulationThrScan(int ID) : Layer(ID)
+{
+  layID=ID;
+  layerZPosition=layID*layerGap-625.213;
+  edgeXMin=-490;
+  edgeYMin=-490;
+  edgeXMax=510;
+  edgeYMax=510;
+  maxEnergy=0.;
+  aTrackingAlgo=NULL;
+}
+
+void LayerForSimulationThrScan::Init(std::vector<Cluster*> &clVec)
+{
+  for(std::vector<Cluster*>::iterator clIt=clVec.begin(); clIt!=clVec.end(); ++clIt){
+    if( (*clIt)->getLayerID()==layID ) 
+      clustersInLayer.push_back(*clIt);
+    else clusters.push_back(*clIt);
+  }
+  if(clusters.size()+clustersInLayer.size()!=clVec.size())
+    streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=clVec.size()" << std::endl;
+
+  for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
+    std::sort((*it)->getHits().begin(),(*it)->getHits().end(),LayerForSimulationThrScan::sortHitsInClusterWithEnergy);
+    if( (*(*it)->getHits().begin())->getEnergy()>maxEnergy ) maxEnergy=(*(*it)->getHits().begin())->getEnergy();
+  }
+}
+
+bool LayerForSimulationThrScan::BuildTrackAndReturnSuccess()
+{
+  aTrackingAlgo=new TrackingAlgo();
+  aTrackingAlgo->Init(clusters);
+  aTrackingAlgo->DoTracking();
+  if(aTrackingAlgo->TrackFinderSuccess()){
+    Track* aTrack=aTrackingAlgo->ReturnTrack();
+    TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
+    aTrackCaracteristics->Init(aTrack);
+    aTrackCaracteristics->ComputeTrackCaracteritics();
+    if( layerZPosition<aTrackCaracteristics->ReturnTrackFirstPoint().z()||layerZPosition>aTrackCaracteristics->ReturnTrackLastPoint().z() ){
+      streamlog_out( DEBUG ) << "layerZPosition = " << layerZPosition << "\t"
+			     << "aTrackCaracteristics->ReturnTrackFirstPoint().z() = " << aTrackCaracteristics->ReturnTrackFirstPoint().z() << "\t" 
+			     << "aTrackCaracteristics->ReturnTrackLastPoint().z() = " << aTrackCaracteristics->ReturnTrackLastPoint().z() << std::endl;
+      delete aTrackCaracteristics;
+      return false;
+    }
+    delete aTrackCaracteristics;
+    if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
+    xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
+    if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
+      this->setLayerTag(fOutsideLayerImpact);
+      streamlog_out( DEBUG ) << "layer " << layID << " is undefined " << std::endl;
+      return false;
+    }
+    this->setLayerTag(fInsideLayerImpact); 
+  }
+  else{
+    if(layerTag!=fUndefinedLayer)
+      streamlog_out( ERROR ) << layID << " layer should be undefined" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+void LayerForSimulationThrScan::ComputeLayerProperties(float threshold)
+{
+  if(layerTag==fUndefinedLayer){
+    streamlog_out( ERROR ) << layID << " layer is undefined; method LayerForSimulationThrScan::ComputeLayerProperties should not be called" << std::endl;
+    return;
+  }
+  layerTag=fUnefficientLayer;
+  multiplicity=0;
+  if(clustersInLayer.empty()) {streamlog_out( DEBUG ) << "empty layer" << std::endl;return;}
+  if(maxEnergy<threshold){streamlog_out( DEBUG ) << "too high threshold" << std::endl;return;}
+  float old_dist=0;
+  float new_dist=0;
+  Track* aTrack=aTrackingAlgo->ReturnTrack();
+  DistanceBetweenOneClusterAndOneTrack* dist=new DistanceBetweenOneClusterAndOneTrack();
+  dist->Init(aTrack->getTrackParameters());
+  std::vector<Cluster*>::iterator closestIt=clustersInLayer.begin();
+  old_dist=dist->CalculateDistance(*closestIt);
+  for(std::vector<Cluster*>::iterator it=clustersInLayer.begin(); it!=clustersInLayer.end(); ++it){
+    if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem" << std::endl;throw;}
+    new_dist=dist->CalculateDistance(*it);
+    if( new_dist<old_dist ){
+      closestIt=it;
+      old_dist=new_dist;
+    }
+  }
+  delete dist;
+  DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
+  distHit->Init(aTrack->getTrackParameters());
+  for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
+    if( distHit->CalculateDistance(*it) < effDistanceCut && (*it)->getEnergy()>threshold ) {
+      layerTag=fEfficientLayer;
+      multiplicity++;
+    }
+    else if( (*it)->getEnergy()<threshold ) break;
+  }
+  delete distHit;
 }

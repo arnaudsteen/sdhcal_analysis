@@ -87,8 +87,23 @@ class LayerForThrScan : public Layer
   LayerForThrScan(int ID,int level);
   ~LayerForThrScan(){;}
   void ComputeLayerProperties();
-  //  bool CheckIfTrueUnfficientLayer(float x,float y);//x,y expected track impact in layer
  private: 
   int thrLevel;
+};
+
+
+class LayerForSimulationThrScan : public Layer
+{
+ public : 
+  LayerForSimulationThrScan(int ID);
+  ~LayerForSimulationThrScan(){delete aTrackingAlgo;}
+  void Init(std::vector<Cluster*> &clVec);
+  bool BuildTrackAndReturnSuccess();
+  void ComputeLayerProperties(float threshold);
+  static bool sortHitsInClusterWithEnergy(EVENT::CalorimeterHit *h1,EVENT::CalorimeterHit *h2){return h1->getEnergy()>h2->getEnergy();}
+ private: 
+  int thrLevel;
+  float maxEnergy;
+  TrackingAlgo* aTrackingAlgo;
 };
 #endif
