@@ -559,38 +559,38 @@ std::vector<double> Shower::RadialTest()
 
 void Shower::LayerProperties(bool DATA=true)
 {
-//  std::cout << "void Shower::LayerProperties() is starting" << std::endl;
-//  float eff[48];memset(eff,0,48*sizeof(float));
-//  float mul[48];memset(mul,0,48*sizeof(float)); 
-//  //float chi[48];memset(chi,0,48*sizeof(float)); 
-//  int compt[48];memset(compt,0,48*sizeof(int));
-//
-//  std::vector<Cluster*> clusterShower;
-//  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
-//    if( (*it)->getClusterTag()!=fTrack )
-//      clusterShower.push_back(*it);
-//  }
-//  std::cout << "void Shower::LayerProperties() is ok 1" << std::endl;
-//  for(std::vector<Track*>::iterator track_et_it=tracks.begin(); track_et_it!=tracks.end(); ++track_et_it){
-//    int trackBegin=(int)(*track_et_it)->getTrackStartingPoint().z()-1;
-//    if(trackBegin<0)trackBegin=0;
-//    int trackEnd=(int)(*track_et_it)->getTrackLastPoint().z();
-//    if(trackEnd==46)trackEnd=47;
-//    streamlog_out( MESSAGE  ) << "track begin = " << trackBegin << "\t"
-//			      << "trackEnd  = " << trackEnd << std::endl;
-//    for(int K=trackBegin; K<=trackEnd; K++){
-//      LayerInShower* aLayer=new LayerInShower(K);
-//      if(!DATA){
-//	float edges[2];edges[0]=-490;edges[1]=510;
-//	aLayer->setLayerEdges(edges);
-//	aLayer->setLayerZPosition( (K*26.131-625.213) );
-//      }
-//      std::cout << "LayerInShower* aLayer=new LayerInShower(K);" << std::endl;
-//      aLayer->Init( (*track_et_it), clusterShower );
-//      std::cout << "aLayer->Init( (*track_et_it), clusterShower );" << std::endl;
-//      std::cout << "aLayer= :" << aLayer << std::endl;
-//      aLayer->ComputeShowerLayerProperties();
-//      delete aLayer;
-//    }
-//  }
+  //  std::cout << "void Shower::LayerProperties() is starting" << std::endl;
+  //  float eff[48];memset(eff,0,48*sizeof(float));
+  //  float mul[48];memset(mul,0,48*sizeof(float)); 
+  //  //float chi[48];memset(chi,0,48*sizeof(float)); 
+  //  int compt[48];memset(compt,0,48*sizeof(int));
+  //
+  //  std::vector<Cluster*> clusterShower;
+  //  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+  //    if( (*it)->getClusterTag()!=fTrack )
+  //      clusterShower.push_back(*it);
+  //  }
+  //  std::cout << "void Shower::LayerProperties() is ok 1" << std::endl;
+  //  for(std::vector<Track*>::iterator track_et_it=tracks.begin(); track_et_it!=tracks.end(); ++track_et_it){
+  //    int trackBegin=(int)(*track_et_it)->getTrackStartingPoint().z()-1;
+  //    if(trackBegin<0)trackBegin=0;
+  //    int trackEnd=(int)(*track_et_it)->getTrackLastPoint().z();
+  //    if(trackEnd==46)trackEnd=47;
+  //    streamlog_out( MESSAGE  ) << "track begin = " << trackBegin << "\t"
+  //			      << "trackEnd  = " << trackEnd << std::endl;
+  //    for(int K=trackBegin; K<=trackEnd; K++){
+  //      LayerInShower* aLayer=new LayerInShower(K);
+  //      if(!DATA){
+  //	float edges[2];edges[0]=-490;edges[1]=510;
+  //	aLayer->setLayerEdges(edges);
+  //	aLayer->setLayerZPosition( (K*26.131-625.213) );
+  //      }
+  //      std::cout << "LayerInShower* aLayer=new LayerInShower(K);" << std::endl;
+  //      aLayer->Init( (*track_et_it), clusterShower );
+  //      std::cout << "aLayer->Init( (*track_et_it), clusterShower );" << std::endl;
+  //      std::cout << "aLayer= :" << aLayer << std::endl;
+  //      aLayer->ComputeShowerLayerProperties();
+  //      delete aLayer;
+  //    }
+  //  }
 }

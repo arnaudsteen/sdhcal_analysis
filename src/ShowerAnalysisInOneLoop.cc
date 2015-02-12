@@ -60,7 +60,7 @@ void ShowerAnalysisInOneLoop::Compute(std::vector<EVENT::CalorimeterHit*> &hits)
     if( _mapHitLayer[i]<=5 ) continue;
     float rmsLay=sqrt(x2sum[i]/_mapHitLayer[i]-xsum[i]/_mapHitLayer[i]*xsum[i]/_mapHitLayer[i] + 
 		      y2sum[i]/_mapHitLayer[i]-ysum[i]/_mapHitLayer[i]*ysum[i]/_mapHitLayer[i] );
-    if( rmsLay>45 )
+    if( rmsLay>20 )
       _nInteractinglayer++;
   }
   //PCA
