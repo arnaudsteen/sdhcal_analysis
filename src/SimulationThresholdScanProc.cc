@@ -67,6 +67,16 @@ SimulationThresholdScanProc::SimulationThresholdScanProc() : Processor("Simulati
 			      "number of different used threshold value",
 			      _nThr, 
 			      (int) 200 );
+
+  registerProcessorParameter( "MinimumThreshold" ,
+			      "minimum value of threshold",
+			      _minThr, 
+			      (float) 0.1 );
+
+  registerProcessorParameter( "MaximumThreshold" ,
+			      "maximum value of threshold",
+			      _maxThr, 
+			      (float) 25.0 );
   
   registerProcessorParameter( "TxtOutputName" ,
 			      "Name of the txt file where the results are stored",
@@ -99,11 +109,13 @@ void SimulationThresholdScanProc::init()
   eff=new double[_nThr];
   thr=new double[_nThr];
   multi=new double[_nThr];
+  multi2=new double[_nThr];
   counter=new double[_nThr];
   for(int i=0; i<_nThr; i++){
-    thr[i]=i/10.0+0.1;
+    thr[i]=_minThr+i*(_maxThr-_minThr)/_nThr;
     eff[i]=0;
     multi[i]=0;
+    multi2[i]=0;
     counter[i]=0;
   }
   UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
@@ -199,6 +211,7 @@ void SimulationThresholdScanProc::LayerProperties()
 	if(aLayerForSimulationThrScan->getLayerTag()==fEfficientLayer){
 	  eff[i]++;
 	  multi[i]+=aLayerForSimulationThrScan->getMultiplicity();
+	  multi2[i]+=aLayerForSimulationThrScan->getMultiplicity()*aLayerForSimulationThrScan->getMultiplicity();
 	  counter[i]++;
 	}
 	else counter[i]++;
@@ -314,9 +327,10 @@ void SimulationThresholdScanProc::end(){
   for(int i=0; i<_nThr; i++){
     if(eff[i]>0){
       multi[i]=multi[i]/eff[i];
+      multi2[i]=multi2[i]/eff[i];
     }
     eff[i]=eff[i]/counter[i];
-    output << thr[i] << " " << " " << counter[i] << " " << eff[i] << " " << multi[i] << std::endl;
+    output << thr[i] << " " << " " << counter[i] << " " << eff[i] << " " << multi[i] << " " << sqrt( (multi2[i]-multi[i]*multi[i])/(eff[i]*counter[i]) ) << std::endl;
   }
   output.close();
   std::cout << "SimulationThresholdScanProc::end()  " << name() 

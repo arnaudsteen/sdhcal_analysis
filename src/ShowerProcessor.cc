@@ -124,6 +124,7 @@ void ShowerProcessor::init()
   tree->Branch("eventTime",&evtTime);
   tree->Branch("spillEventTime",&spillEvtTime);
   tree->Branch("eventNumber",&_nEvt);
+  tree->Branch("firstShowerInSpill",&firstShowerInSpill);
   tree->Branch("NShowers",&nshower);
   tree->Branch("Nhit",&nhit);
   tree->Branch("Nhit1",&nhit1);
@@ -175,7 +176,8 @@ void ShowerProcessor::init()
   _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
   _bcidRef=0;
-
+  firstShowerInSpill=1;
+  firstSpillEvtFound=true;
 }
 
 void ShowerProcessor::ClearVector()
@@ -281,21 +283,32 @@ void ShowerProcessor::findSpillEventTime(LCEvent* evt,LCCollection* col)
       return ;
     } 
   }
-  
+
+  //_bcidRef = absolute bcid of 1st pysical event in spill
   if(_prevBCID==0){
-    spillEvtTime=hitTime;
-    _bcidRef=_bcid;
+    spillEvtTime=_bcid;
+    _bcidRef=0;
     streamlog_out( DEBUG ) << "event : " << _nEvt+1 
 			   << " ; first event time : " << spillEvtTime
 			   << " ; first reference : " << _bcidRef 
 			   << std::endl;
+    if(numElements<400){
+      firstShowerInSpill=0;
+      firstSpillEvtFound=false;
+    }
   }
-  if( (_bcid-_prevBCID)*200 < _timeCut ){
-    spillEvtTime=_bcid-_bcidRef-hitTime;
+  else if( (_bcid-_prevBCID)*200 < _timeCut ){
+    spillEvtTime=_bcid-_bcidRef;
     streamlog_out( DEBUG ) << "event : " << _nEvt+1 
 			   << " ; reference : " << _bcidRef 
 			   << " ; time to the spill start : " << spillEvtTime
 			   << std::endl;
+    if(firstSpillEvtFound==false&&numElements>400){
+      firstShowerInSpill=1;
+      firstSpillEvtFound=true;
+    }
+    else
+      firstShowerInSpill=0;
   }
   else{
     _bcidRef=_bcid;
@@ -305,6 +318,14 @@ void ShowerProcessor::findSpillEventTime(LCEvent* evt,LCCollection* col)
 			   << " ; New reference : " << _bcidRef 
 			   << " ; time to the spill start : " << spillEvtTime
 			   << std::endl;
+    if(numElements>400){
+      firstShowerInSpill=1;
+      firstSpillEvtFound=true;
+    }
+    else{ 
+      firstShowerInSpill=0;
+      firstSpillEvtFound=false;
+    }
   }
   _prevBCID=_bcid;
 }

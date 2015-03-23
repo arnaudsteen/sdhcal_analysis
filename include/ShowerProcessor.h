@@ -129,6 +129,8 @@ class ShowerProcessor : public Processor {
   std::vector<bool> tagtrack;
   unsigned long long evtTime;
   unsigned long long spillEvtTime;
+  int firstShowerInSpill;
+  bool firstSpillEvtFound;
   int nhit;
   int nhit1;
   int nhit2;

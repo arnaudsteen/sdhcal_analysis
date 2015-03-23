@@ -80,10 +80,13 @@ class SimulationThresholdScanProc : public Processor {
   
   double *eff;
   double *multi;
+  double *multi2;
   double *thr;
   double *counter;
   int _nlayer;
   int _nThr;
+  float _minThr;
+  float _maxThr;
   float _cosTheta;
   float _chi2;
   float _transverseRatio;
