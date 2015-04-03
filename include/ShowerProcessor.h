@@ -178,6 +178,7 @@ class ShowerProcessor : public Processor {
   ThreeVector _incidentParticleMomentum; //if simu
   float _incidentParticleCosTheta; //if simu
   float _reconstructedCosTheta;
+  float _emFraction;
 } ;
 
 #endif

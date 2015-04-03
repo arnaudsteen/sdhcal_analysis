@@ -167,6 +167,7 @@ void ShowerProcessor::init()
   tree->Branch("TransverseRatio",&transverseRatio);
   tree->Branch("IncidentParticleCosTheta",&_incidentParticleCosTheta);
   tree->Branch("ReconstructedCosTheta",&_reconstructedCosTheta);
+  tree->Branch("EMFraction",&_emFraction);
 
   memset(longiProfile,0,48*sizeof(int));
   memset(longiProfile_bis,0,48*sizeof(int));
@@ -494,6 +495,7 @@ void ShowerProcessor::processEvent( LCEvent * evt )
 	evt->parameters().getFloatVals(std::string("ParticleMomentum"),pMOm);
 	_incidentParticleMomentum=ThreeVector(pMOm.at(0),pMOm.at(1),pMOm.at(2));
 	_incidentParticleCosTheta=_incidentParticleMomentum.cosTheta();
+	_emFraction=evt->parameters().getFloatVal(std::string("EdepEM"))/evt->parameters().getFloatVal(std::string("EdepTotal"));
       }
       doShower();
     }
