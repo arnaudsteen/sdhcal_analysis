@@ -78,6 +78,10 @@ void Shower::MakeAnalysisInOneLoop()
   nInteractingLayer=aShowerAnalysisInOneLoop->getNumberOfInteractingLayers();
   transverseRatio=aShowerAnalysisInOneLoop->getTransverseRatio();
   radius=aShowerAnalysisInOneLoop->getRadius();
+  nhit2By2=aShowerAnalysisInOneLoop->getNhit2by2();
+  nhit3By3=aShowerAnalysisInOneLoop->getNhit3by3();
+  nhit4By4=aShowerAnalysisInOneLoop->getNhit4by4();
+  nhit5By5=aShowerAnalysisInOneLoop->getNhit5by5();
   delete aShowerAnalysisInOneLoop;
 }
 

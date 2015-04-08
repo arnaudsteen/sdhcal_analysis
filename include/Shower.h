@@ -75,6 +75,10 @@ class Shower
   inline int* getLongiProfileBis(){return longiProfileBis;}
   inline int* getRadialProfileBis(){return radialProfileBis;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
+  inline int getNhit2By2(){return nhit2By2;}
+  inline int getNhit3By3(){return nhit3By3;}
+  inline int getNhit4By4(){return nhit4By4;}
+  inline int getNhit5By5(){return nhit5By5;}
 
   float Radius(){return radius;}
  private:
@@ -98,6 +102,11 @@ class Shower
   ThreeVector aShowerClusterPositionAtMax;
   int nInteractingLayer;
   float radius;
+  int nhit2By2;
+  int nhit3By3;
+  int nhit4By4;
+  int nhit5By5;
+  
 };
 
 class ShowerClassFunction{

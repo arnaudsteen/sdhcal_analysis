@@ -168,6 +168,10 @@ void ShowerProcessor::init()
   tree->Branch("IncidentParticleCosTheta",&_incidentParticleCosTheta);
   tree->Branch("ReconstructedCosTheta",&_reconstructedCosTheta);
   tree->Branch("EMFraction",&_emFraction);
+  tree->Branch("Nhit2by2",&nhit2By2);
+  tree->Branch("Nhit3by3",&nhit3By3);
+  tree->Branch("Nhit4by4",&nhit4By4);
+  tree->Branch("Nhit5by5",&nhit5By5);
 
   memset(longiProfile,0,48*sizeof(int));
   memset(longiProfile_bis,0,48*sizeof(int));
@@ -386,6 +390,10 @@ void ShowerProcessor::ShowerAnalysis()
   radius=shower->Radius();
   ninteractinglayer=shower->NInteractingLayer();
   transverseRatio=shower->TransverseRatio();  
+  nhit2By2=shower->getNhit2By2();
+  nhit3By3=shower->getNhit3By3();
+  nhit4By4=shower->getNhit4By4();
+  nhit5By5=shower->getNhit5By5();
   for(int i=0;i<4;i++)
     cog[i]=shower->getShowerBarycenter()[i];
   ThreeVector px(-1,0,cog[1]);

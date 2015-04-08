@@ -179,6 +179,10 @@ class ShowerProcessor : public Processor {
   float _incidentParticleCosTheta; //if simu
   float _reconstructedCosTheta;
   float _emFraction;
+  int nhit2By2;
+  int nhit3By3;
+  int nhit4By4;
+  int nhit5By5;
 } ;
 
 #endif
