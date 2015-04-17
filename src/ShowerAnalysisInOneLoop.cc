@@ -92,7 +92,7 @@ void ShowerAnalysisInOneLoop::Compute(std::vector<EVENT::CalorimeterHit*> &hits)
     if( _mapHitLayer[i]<=5 ) continue;
     float rmsLay=sqrt(x2sum[i]/_mapHitLayer[i]-xsum[i]/_mapHitLayer[i]*xsum[i]/_mapHitLayer[i] + 
 		      y2sum[i]/_mapHitLayer[i]-ysum[i]/_mapHitLayer[i]*ysum[i]/_mapHitLayer[i] );
-    if( rmsLay>20 )
+    if( rmsLay>10 )
       _nInteractinglayer++;
   }
   //PCA
@@ -106,4 +106,5 @@ void ShowerAnalysisInOneLoop::Compute(std::vector<EVENT::CalorimeterHit*> &hits)
   _transverseRatio = sqrt(pca->GetEigenValues()[1]*pca->GetEigenValues()[1]+pca->GetEigenValues()[2]*pca->GetEigenValues()[2])/pca->GetEigenValues()[0] ;
   pca->End();
   delete pca;
+
 }

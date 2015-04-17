@@ -72,6 +72,14 @@ std::vector<Cluster*> Shower::getMIPClusters()
 
 void Shower::MakeAnalysisInOneLoop()
 {
+  if( nhitInLayer.size()==0 ){
+    UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
+      if(nhitInLayer[IDdecoder(*it)["K-1"]])
+	nhitInLayer[IDdecoder(*it)["K-1"]]+=1;
+      else nhitInLayer[IDdecoder(*it)["K-1"]]=1;
+    }
+  }
   ShowerAnalysisInOneLoop* aShowerAnalysisInOneLoop=new ShowerAnalysisInOneLoop(nhitInLayer);
   aShowerAnalysisInOneLoop->Compute(hits);
   Nhit=aShowerAnalysisInOneLoop->getNumberOfHits();
