@@ -131,6 +131,8 @@ class ShowerProcessor : public Processor {
   unsigned long long spillEvtTime;
   int firstShowerInSpill;
   bool firstSpillEvtFound;
+  bool _cerenkovTag;
+  int _timeDif_minus_bif;
   int nhit;
   int nhit1;
   int nhit2;

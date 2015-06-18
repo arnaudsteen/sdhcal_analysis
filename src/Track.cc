@@ -75,7 +75,7 @@ void Track::AddClusters(std::vector<Cluster*> &clVec)
       if( dist->CalculateDistance(*it) < 20 ){
 	clusters.push_back(*it);
 	ComputeTrackParameters(false);
-	if(getChi2()>10){
+	if(getChi2()>100){
 	  clusters.pop_back();
 	  addRejectedClusters(*it);
 	}

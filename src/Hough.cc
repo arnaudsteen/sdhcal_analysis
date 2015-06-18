@@ -49,9 +49,9 @@ void Hough::ComputeHoughTransform()
       track->setHTParameters(par);
       track->setClusters(selectedBin.clusters);
       track->ComputeTrackParameters(true);
-      if( track->getChi2()>5 ) {delete track;continue;}
+      if( track->getChi2()>100 ) {delete track;continue;}
       track->AddClusters(this->getClusters());
-      if( track->getChi2()>5 || track->getClusters().size()<=4 ) {delete track;continue;}
+      if( track->getChi2()>100 || track->getClusters().size()<=4 ) {delete track;continue;}
       splitTrack(track);
       addTrack(track);
       for(std::vector<Cluster*>::iterator kt=track->getClusters().begin(); kt!=track->getClusters().end(); ++kt){

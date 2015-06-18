@@ -94,6 +94,7 @@ class TrackProc : public Processor {
   bool DATA;
 
   std::vector<EVENT::CalorimeterHit*> calohit;
+  std::map<int, std::vector<EVENT::CalorimeterHit*> > hitMap;
   std::vector<Cluster*> clusters;
   std::string _mapFile;
   std::map<int,double> _effMap;
@@ -128,6 +129,7 @@ class TrackProc : public Processor {
   float _chi2Global;
   std::vector<int> clusterSize;
   float _mulGlobal3[48];
+  float _effGlobal3[48];
   float _countGlobal3[48];
 } ;
 

@@ -125,6 +125,8 @@ void ShowerProcessor::init()
   tree->Branch("spillEventTime",&spillEvtTime);
   tree->Branch("eventNumber",&_nEvt);
   tree->Branch("firstShowerInSpill",&firstShowerInSpill);
+  tree->Branch("cerenkovTag",&_cerenkovTag);
+  tree->Branch("timeDif_minus_bif",&_timeDif_minus_bif);
   tree->Branch("NShowers",&nshower);
   tree->Branch("Nhit",&nhit);
   tree->Branch("Nhit1",&nhit1);
@@ -355,7 +357,9 @@ void ShowerProcessor::doShower()
   nshower=1;
   Shower* shower=new Shower();
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=temp.begin(); it!=temp.end(); ++it){
-    shower->AddHits(*it);
+    std::pair<int, EVENT::CalorimeterHit*> p(idDecoder(*it)["K-1"],(*it));
+    //shower->AddHits(*it);
+    shower->AddHits(p);
   }
   //temp.clear();
   theShowers.push_back(shower);
@@ -497,6 +501,11 @@ void ShowerProcessor::processEvent( LCEvent * evt )
       if(DATA) {
         findEventTime(evt,col);
         findSpillEventTime(evt,col);
+	std::stringstream bifTag("");
+	bifTag << "cerenkovTag";
+	//std::stringstream eventTime
+	_cerenkovTag=evt->parameters().getIntVal(bifTag.str());
+	//_timeDif_minus_bif=calohit.at(0)->getTime()-evt->getParameter;
       }
       else{
 	std::vector<float> pMOm;

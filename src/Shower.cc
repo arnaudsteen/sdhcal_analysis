@@ -36,26 +36,48 @@ Shower::~Shower()
 void Shower::FindClustersInLayer()
 {
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");    
-  std::vector<EVENT::CalorimeterHit*> _temp;
   int ID=0;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
-    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
-    cl->AddHits(*it);
-    ID+=1;
-    _temp.push_back(*it);
-    cl->BuildCluster(_temp,hits, (*it));
-    cl->buildClusterPosition();
-    cl->setClusterID(ID);
-    if(nhitInLayer[cl->getLayerID()])
-      nhitInLayer[cl->getLayerID()]+=cl->getHits().size();
-    else nhitInLayer[cl->getLayerID()]=cl->getHits().size();
-    clusters.push_back(cl);
+  std::vector<EVENT::CalorimeterHit*> _temp;
+  if(hitMap.size()==0){
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
+      if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
+      Cluster *cl=new Cluster(IDdecoder(*it)["K-1"]);
+      cl->AddHits(*it);
+      ID+=1;
+      _temp.push_back(*it);
+      cl->BuildCluster(_temp,hits, (*it));
+      cl->buildClusterPosition();
+      cl->setClusterID(ID);
+      clusters.push_back(cl);
+    }
+    _temp.clear();
   }
+  else{
+    for(std::map<int,std::vector<EVENT::CalorimeterHit*> >::iterator it=hitMap.begin(); it!=hitMap.end(); ++it){
+      for( std::vector<EVENT::CalorimeterHit*>::iterator jt=it->second.begin(); jt!=it->second.end(); ++jt){
+	if(std::find(_temp.begin(),_temp.end(), (*jt) )!=_temp.end()) continue;
+	Cluster *cl=new Cluster(it->first);
+	cl->AddHits(*jt);
+	ID+=1;
+	_temp.push_back(*jt);
+	cl->BuildCluster(_temp,it->second,(*jt));
+	cl->buildClusterPosition();
+	cl->setClusterID(ID);
+	clusters.push_back(cl);
+      }
+      _temp.clear();
+    }
+  }
+  
+  //prepare cluster for hough and profile
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     (*it)->IsolationCriterion(clusters);
     if((*it)->getClusterTag()==fMip)
       (*it)->BuildHoughSpace();
+    
+    if(nhitInLayer[ (*it)->getLayerID() ])
+      nhitInLayer[ (*it)->getLayerID() ]+=(*it)->getHits().size();
+    else nhitInLayer[ (*it)->getLayerID() ]=(*it)->getHits().size();
   }
   std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
 }

@@ -122,6 +122,7 @@ void TrackProc::init()
   //}
   for(int i=0; i<48; i++){
     _mulGlobal3[i]=0;
+    _effGlobal3[i]=0;
     _countGlobal3[i]=0;
   }
 }
@@ -223,17 +224,20 @@ void TrackProc::doTrackStudy()
   int ID=0;
   int nclusters=0;
   Cluster* cluster=NULL;
-  for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
-    cluster=new Cluster(IDdecoder(*it)["K-1"]);
-    nclusters++;
-    cluster->AddHits(*it);
-    ID+=1;
-    _temp.push_back(*it);
-    cluster->BuildCluster(_temp,calohit, (*it));
-    cluster->buildClusterPosition();
-    cluster->setClusterID(ID);
-    clusters.push_back(cluster);
+  for(std::map<int, std::vector<EVENT::CalorimeterHit*> >::iterator jt=hitMap.begin(); jt!=hitMap.end(); ++jt){
+    _temp.clear();
+    for(std::vector<EVENT::CalorimeterHit*>::iterator it=jt->second.begin(); it!=jt->second.end(); ++it){
+      if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end()) continue;
+      cluster=new Cluster(IDdecoder(*it)["K-1"]);
+      nclusters++;
+      cluster->AddHits(*it);
+      ID+=1;
+      _temp.push_back(*it);
+      cluster->BuildCluster(_temp,jt->second, (*it));
+      cluster->buildClusterPosition();
+      cluster->setClusterID(ID);
+      clusters.push_back(cluster);
+    }
   }
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
     (*it)->IsolatedCluster(clusters);
@@ -391,6 +395,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff1[K]=0;
       eff2[K]=0;
       eff3[K]=0;
+      _countGlobal3[K]+=1;
     }
     if( aLayer->getLayerTag()==fEfficientLayer ){
       eff1[K]=aLayer->getEfficiency()[0];
@@ -398,6 +403,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
       _mulGlobal3[K]+=multi[K];
+      _effGlobal3[K]+=1;
       _countGlobal3[K]+=1;
     }
     delete aLayer;
@@ -454,6 +460,7 @@ void TrackProc::processEvent( LCEvent * evt )
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       calohit.clear();
+      hitMap.clear();
       for(unsigned int K=0; K<48; K++){
 	eff1[K]=-1;
 	eff2[K]=-1;
@@ -466,6 +473,7 @@ void TrackProc::processEvent( LCEvent * evt )
       	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
       	if(IDdecoder(hit)["K-1"]>48) {continue;}
       	calohit.push_back(hit);
+	hitMap[IDdecoder(hit)["K-1"]].push_back(hit);
       }
       if(DATA) {
         findEventTime(evt,col);
@@ -492,7 +500,9 @@ void TrackProc::check( LCEvent * evt ) {
 
 void TrackProc::end(){ 
   for(int i=0; i<48; i++){
-    streamlog_out( MESSAGE ) << i << "\t multi = " << _mulGlobal3[i]/_countGlobal3[i] << "\t ntrack = " << _countGlobal3[i] << std::endl;
+    streamlog_out( MESSAGE ) << i 
+			     << "\t effi = " << _effGlobal3[i]/_countGlobal3[i] 
+			     << "\t multi = " << _mulGlobal3[i]/_effGlobal3[i] << "\t ntrack = " << _countGlobal3[i] << std::endl;
   }
   //  file->cd();
   file->Write();

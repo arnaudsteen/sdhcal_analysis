@@ -54,6 +54,7 @@ class Shower
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
   inline void AddHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits.insert(hits.end(),hitVec.begin(),hitVec.end());}
+  inline void AddHits(std::pair<int, EVENT::CalorimeterHit*> p){hitMap[p.first].push_back(p.second);hits.push_back(p.second);}
   inline std::vector<EVENT::CalorimeterHit*>& getHits(){return hits;}
   inline std::vector<Cluster*>& getClusters(){return clusters;}
   inline std::vector<Track*>& getTracks(){return tracks;}
@@ -84,6 +85,7 @@ class Shower
  private:
   int shID;
   std::vector<EVENT::CalorimeterHit*> hits;
+  std::map<int, std::vector<CalorimeterHit*> > hitMap;
   std::vector<Cluster*> clusters;
   std::vector<Track*> tracks;
   std::vector<float> showerBarycenter;

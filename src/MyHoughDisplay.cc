@@ -270,7 +270,7 @@ void MyHoughDisplayProc::processEvent( LCEvent * evt )
 	calohit.push_back(hit);
       }
       //  UTIL::CellIDDecoder<CalorimeterHit*> idDecoder(col);
-      if(numElements>200){
+      if(numElements>20){
 	doClusters();
 	doHoughTracking();
 	drawEventDisplay();
