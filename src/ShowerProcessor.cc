@@ -154,6 +154,7 @@ void ShowerProcessor::init()
   tree->Branch("F3D",&fractaldim);
   tree->Branch("Density","std::vector<int>",&density);
   tree->Branch("TrackLength","std::vector<double>",&TrackLength);
+  tree->Branch("TrackCosTheta","std::vector<double>",&TrackCosTheta);
   tree->Branch("TrackMultiplicity",&TrackMultiplicity);
   tree->Branch("EfficiencyPerLayer","std::vector<double>",&eff_layer);
   tree->Branch("MultiplicityPerLayer","std::vector<double>",&mul_layer);
@@ -417,6 +418,7 @@ void ShowerProcessor::ShowerAnalysis()
     shower->setTracks( hough->ReturnTracks() );
     //    shower->LayerProperties();
     TrackLength.reserve(shower->getTracks().size());
+    TrackCosTheta.reserve(shower->getTracks().size());
     trackNclusters.reserve(shower->getTracks().size());
     TrackMultiplicity=int(shower->getTracks().size());
     for(std::vector<Track*>::iterator jt=shower->getTracks().begin(); jt!=shower->getTracks().end(); ++jt){
@@ -425,6 +427,7 @@ void ShowerProcessor::ShowerAnalysis()
       streamlog_out( DEBUG ) << "aTrackCaracteristics = " << aTrackCaracteristics << std::endl;
       aTrackCaracteristics->ComputeTrackCaracteritics();
       TrackLength.push_back(aTrackCaracteristics->ReturnTrackLength());
+      TrackCosTheta.push_back(aTrackCaracteristics->ReturnTrackCosTheta());
       trackNclusters.push_back(aTrackCaracteristics->ReturnTrackNumberOfClusters());
       std::vector<int> clsize=aTrackCaracteristics->ReturnTrackClustersSize();
       trackclSize.insert(trackclSize.begin(),clsize.begin(),clsize.end());
