@@ -196,6 +196,7 @@ void ShowerProcessor::ClearVector()
 
   //tree variables:
   TrackLength.clear();
+  TrackCosTheta.clear();
   eff_layer.clear();
   mul_layer.clear();
   trackclSize.clear();
