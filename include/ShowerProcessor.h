@@ -169,6 +169,7 @@ class ShowerProcessor : public Processor {
   int nshower;
   std::vector<double> TrackLength;
   std::vector<double> TrackCosTheta;
+  std::vector<double> TrackEmissionAngle;
   std::vector<double> eff_layer;
   std::vector<double> mul_layer;
   std::vector<int> trackclSize;
