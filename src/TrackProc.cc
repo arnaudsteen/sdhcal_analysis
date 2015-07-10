@@ -54,6 +54,11 @@ TrackProc::TrackProc() : Processor("TrackProc") {
 			      DATA,
 			      false);
 
+  registerProcessorParameter( "MapFile" ,
+                              "file where efficiency and multiplicity map is stored",
+                              _mapFile,
+                              std::string("Map.txt") );
+
 }
 
 void TrackProc::init()
@@ -104,7 +109,19 @@ void TrackProc::init()
     _effGlobal3[i]=0.;
     _countGlobal3[i]=0;
   }
+
+
+  MapReader* mapreader=new MapReader();
+  mapreader->SetFileToRead(_mapFile);
+  mapreader->ReadFileAndBuildMaps();
+  _effMap=mapreader->getEfficiencyMap();
+  _mulMap=mapreader->getMultiplicityMap();
+  delete mapreader;
+  meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
+  meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+
 }
+
 //------------------------------------------------------------------------------------------------------------------------
 
 void TrackProc::findEventTime(LCEvent* evt,LCCollection* col)
@@ -369,6 +386,10 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       aLayer->setLayerEdges(edges);
       aLayer->setLayerZPosition( (K*26.131-625.213) );
     }
+    else{
+      aLayer->setMultiplicityMap(_mulMap);
+      aLayer->setMeanMultiplicity(meanMultiplicity);
+    }
     aLayer->ComputeLayerProperties();
     chi2_[K]=aLayer->getChi2();
     if( aLayer->getLayerTag()==fUnefficientLayer ){
@@ -382,6 +403,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff2[K]=aLayer->getEfficiency()[1];
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
+      multiCorrected[K]=aLayer->getCorrectedMultiplicity();
       _mulGlobal3[K]+=multi[K];
       _effGlobal3[K]+=1;
       _countGlobal3[K]+=1;

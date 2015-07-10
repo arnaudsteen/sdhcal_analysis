@@ -6,14 +6,15 @@ void MapReader::ReadFileAndBuildMaps()
 {
   std::ifstream in;
   in.open(fileToRead.c_str());
-  if(!in){
+  std::cout << "yoyoyyoyoo" << std::endl;
+  if(in.is_open()){
     std::cout << "MAP FILE IN \t " << fileToRead.c_str() << std::endl;
     int asickey,nevent;
     double efficiency,multiplicity,efficiencyError;
     while(1){
       if(!in.good()) break;
-      if(asickey>=48000) continue;
       in >> asickey >> nevent >> efficiency >> efficiencyError >> multiplicity;
+      if(asickey>=48000) continue;
       effMap[asickey]=efficiency;
       mulMap[asickey]=multiplicity;
     }

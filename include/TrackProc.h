@@ -20,6 +20,7 @@
 #include "Cluster.h"
 #include "TrackingAlgo.h"
 #include "Layer.h"
+#include "MapReader.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -95,6 +96,12 @@ class TrackProc : public Processor {
   std::map<int, std::vector<EVENT::CalorimeterHit*> > hitMap;
   std::vector<EVENT::CalorimeterHit*> calohit;
   std::vector<Cluster*> clusters;
+
+  float meanEfficiency;
+  float meanMultiplicity;
+  std::string _mapFile;
+  std::map<int,double> _effMap;
+  std::map<int,double> _mulMap;
   
  private:
   

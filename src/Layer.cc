@@ -140,8 +140,6 @@ void Layer::ComputeLayerProperties()
     delete distHit;
     if(this->getLayerTag()==fEfficientLayer){
       this->multiplicity=(*closestIt)->getHits().size();
-      if(meanMultiplicity!=0)
-	this->MultiplicityMapCorrection( (*closestIt) );
       int myEffTab[2];for(int i=0; i<2;i++) myEffTab[i]=0;
       for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
 	if( (int)round((*it)->getEnergy())==3 ) {myEffTab[0]=1;myEffTab[1]=1; break;}
@@ -155,6 +153,9 @@ void Layer::ComputeLayerProperties()
 			     << "\t effThr[1] = " << effThr[1] 
 			     << "\t effThr[2] = " << effThr[2] 
 			     << std::endl;
+
+      if(meanMultiplicity!=0)
+	this->MultiplicityMapCorrection( (*closestIt) );
     }
     else{
       this->setLayerTag(fUnefficientLayer);
@@ -182,15 +183,16 @@ void Layer::ComputeLayerProperties()
 void Layer::MultiplicityMapCorrection(Cluster* cluster)
 {
   int asicKey=findAsicKey(cluster);
-  if( asicKey>0 )
-    if(_multiMap.size()!=0)
-      correctedMultiplicity=cluster->getHits().size()*meanMultiplicity/_multiMap[asicKey];
+  if( asicKey>0 && _multiMap.size()!=0 && _multiMap[asicKey] )
+    correctedMultiplicity=cluster->getHits().size()*meanMultiplicity/_multiMap[asicKey];
+  else 
+    correctedMultiplicity=multiplicity;
 }
 
 int Layer::findAsicKey(Cluster* cluster)
 {
-  int I=int(round(cluster->getClusterPosition().x()));
-  int J=int(round(cluster->getClusterPosition().y()));
+  int I=int(round(cluster->getClusterPosition().x()/10.408));
+  int J=int(round(cluster->getClusterPosition().y()/10.408));
   if(I>96||I<0||J>96||J<0) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;
