@@ -97,6 +97,11 @@ ShowerProcessor::ShowerProcessor() : Processor("ShowerProcessor") {
 			     "Index of HCal Layers" ,
 			     _hcalLayers,
 			     hcalLayers);
+
+  registerProcessorParameter( "MapFile" ,
+                              "file where efficiency and multiplicity map is stored",
+                              _mapFile,
+                              std::string("Map.txt") );
 }
 
 
@@ -132,6 +137,10 @@ void ShowerProcessor::init()
   tree->Branch("Nhit1",&nhit1);
   tree->Branch("Nhit2",&nhit2);
   tree->Branch("Nhit3",&nhit3);
+  tree->Branch("NhitCorrected",&nhitCorrected);
+  tree->Branch("Nhit1Corrected",&nhit1Corrected);
+  tree->Branch("Nhit2Corrected",&nhit2Corrected);
+  tree->Branch("Nhit3Corrected",&nhit3Corrected);
   tree->Branch("Nhough1",&nhough1);
   tree->Branch("Nhough2",&nhough2);
   tree->Branch("Nhough3",&nhough3);
@@ -187,6 +196,18 @@ void ShowerProcessor::init()
   _bcidRef=0;
   firstShowerInSpill=1;
   firstSpillEvtFound=true;
+
+  MapReader* mapreader=new MapReader();
+  mapreader->SetFileToRead(_mapFile);
+  mapreader->ReadFileAndBuildMaps();
+  _effMap=mapreader->getEfficiencyMap();
+  _mulMap=mapreader->getMultiplicityMap();
+  delete mapreader;
+  meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
+  meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+
+  std::cout << "meanEfficiency = " << meanEfficiency << "\t meanMultiplicity = " << meanMultiplicity << std::endl;
+  
 }
 
 void ShowerProcessor::ClearVector()
@@ -402,6 +423,13 @@ void ShowerProcessor::ShowerAnalysis()
   nhit3By3=shower->getNhit3By3();
   nhit4By4=shower->getNhit4By4();
   nhit5By5=shower->getNhit5By5();
+  shower->setMultiplicityMap(_mulMap);
+  shower->setEfficiencyMap(_effMap);
+  shower->CorrectedNumberOfHits(meanMultiplicity,meanEfficiency);
+  nhit1Corrected=shower->getCorrectedNumberOfHits()[0];
+  nhit2Corrected=shower->getCorrectedNumberOfHits()[1];
+  nhit3Corrected=shower->getCorrectedNumberOfHits()[2];
+  nhitCorrected=nhit1Corrected+nhit2Corrected+nhit3Corrected;
   for(int i=0;i<4;i++)
     cog[i]=shower->getShowerBarycenter()[i];
   ThreeVector px(-1,0,cog[1]);

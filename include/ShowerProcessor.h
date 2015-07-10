@@ -120,6 +120,12 @@ class ShowerProcessor : public Processor {
   std::map<int,EVENT::CalorimeterHit*> hitmap;
   std::vector<EVENT::CalorimeterHit*> calohit;
   std::vector<Shower*> theShowers;
+  std::string _mapFile;
+  std::map<int,double> _effMap;
+  std::map<int,double> _mulMap;
+  float meanEfficiency;
+  float meanMultiplicity;
+
   //  std::vector<Layer*> layVec;
   int numElements;
   LCCollection * col;
@@ -137,6 +143,10 @@ class ShowerProcessor : public Processor {
   int nhit1;
   int nhit2;
   int nhit3;
+  float nhitCorrected;
+  float nhit1Corrected;
+  float nhit2Corrected;
+  float nhit3Corrected;
   int nhough1;
   int nhough2;
   int nhough3;

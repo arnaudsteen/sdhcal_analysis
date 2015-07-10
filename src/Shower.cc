@@ -9,7 +9,7 @@
 #include "marlin/VerbosityLevels.h"
 #include <string.h>
 
-Shower::Shower()
+Shower::Shower() : _nhitCorrected(3,0.)
 {
   Nhit.reserve(4);
   showerBarycenter.reserve(4);
@@ -31,6 +31,9 @@ Shower::~Shower()
   showerBarycenter.clear();  
   showerBarycenterError.clear();  
   nhitInLayer.clear();
+  _nhitCorrected.clear();
+  _mulMap.clear();
+  _effMap.clear();
 }
 
 void Shower::FindClustersInLayer()
@@ -113,6 +116,23 @@ void Shower::MakeAnalysisInOneLoop()
   nhit4By4=aShowerAnalysisInOneLoop->getNhit4by4();
   nhit5By5=aShowerAnalysisInOneLoop->getNhit5by5();
   delete aShowerAnalysisInOneLoop;
+}
+
+void Shower::CorrectedNumberOfHits(float meanMul=0.0, float meanEff=0.0)
+{
+  for(std::vector<CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
+    int asicKey=findAsicKey(*it);
+    if( asicKey>0 && _mulMap.size()>0 && _mulMap[asicKey]>0 && _effMap.size()>0 && _effMap[asicKey]){
+      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
+      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
+      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
+    }
+    else{
+      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=1;
+      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=1;
+      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=1;
+    }
+  }
 }
 
 void Shower::FindShowerBarycenter()

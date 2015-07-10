@@ -51,6 +51,8 @@ class Shower
   float RadiusAtShowerMax();
   float ShowerLength();
   std::vector<double> RadialTest();
+  void CorrectedNumberOfHits(float meanMul, float meanEff);
+
 
   inline void AddHits(EVENT::CalorimeterHit* hit){hits.push_back(hit);}
   inline void AddHits(std::vector<EVENT::CalorimeterHit*> hitVec){hits.insert(hits.end(),hitVec.begin(),hitVec.end());}
@@ -70,6 +72,7 @@ class Shower
   inline int getLastLayer(){return lastLayer;}
   inline void setNumberOfHits(std::vector<int> &nhit){Nhit=nhit;}
   inline std::vector<int>& getNumberOfHits(){return Nhit;}
+  inline std::vector<float>& getCorrectedNumberOfHits(){return _nhitCorrected;}
   inline int* getLongiProfile(){return longiProfile;}
   inline int* getRadialProfile(){return radialProfile;}
   inline int* getClusterRadialProfile(){return clusterRadialProfile;}
@@ -80,6 +83,8 @@ class Shower
   inline int getNhit3By3(){return nhit3By3;}
   inline int getNhit4By4(){return nhit4By4;}
   inline int getNhit5By5(){return nhit5By5;}
+  inline void setMultiplicityMap(std::map<int,double> a_map){_mulMap=a_map;}
+  inline void setEfficiencyMap(std::map<int,double> a_map){_effMap=a_map;}
 
   float Radius(){return radius;}
  private:
@@ -91,6 +96,9 @@ class Shower
   std::vector<float> showerBarycenter;
   std::vector<float> showerBarycenterError;
   std::map<int,int> nhitInLayer;
+  std::vector<float> _nhitCorrected;
+  std::map<int,double> _mulMap;
+  std::map<int,double> _effMap;
   int longiProfile[48];//relative to shower starting layer
   int longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
