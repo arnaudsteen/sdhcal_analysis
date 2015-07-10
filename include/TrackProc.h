@@ -18,7 +18,6 @@
 #include <TBranch.h>
 
 #include "Cluster.h"
-#include "MapReader.h"
 #include "TrackingAlgo.h"
 #include "Layer.h"
 
@@ -93,14 +92,10 @@ class TrackProc : public Processor {
 
   bool DATA;
 
-  std::vector<EVENT::CalorimeterHit*> calohit;
   std::map<int, std::vector<EVENT::CalorimeterHit*> > hitMap;
+  std::vector<EVENT::CalorimeterHit*> calohit;
   std::vector<Cluster*> clusters;
-  std::string _mapFile;
-  std::map<int,double> _effMap;
-  std::map<int,double> _mulMap;
-  float meanMultiplicity;
-  float meanEfficiency;
+  
  private:
   
   int numElements;
@@ -127,10 +122,12 @@ class TrackProc : public Processor {
   float _effGlobal;
   float _mulGlobal;
   float _chi2Global;
-  std::vector<int> clusterSize;
   float _mulGlobal3[48];
+  int _countGlobal3[48];
   float _effGlobal3[48];
-  float _countGlobal3[48];
+  std::vector<int> clusterSize;
+
+
 } ;
 
 #endif

@@ -54,16 +54,6 @@ TrackProc::TrackProc() : Processor("TrackProc") {
 			      DATA,
 			      false);
 
-  registerProcessorParameter( "MapFile" ,
-			      "file where efficiency and multiplicity map is stored",
-			      _mapFile,
-			      std::string("Map.txt") ); 
-
-  registerProcessorParameter( "MeanMultiplicity" ,
-			      "mean value of sdhcal asic multiplicity",
-			      meanMultiplicity,
-			      float(1.7) ); 
-
 }
 
 void TrackProc::init()
@@ -109,20 +99,9 @@ void TrackProc::init()
   _timeCut = 20*pow(10.0,9); //20 sec
   _prevBCID=0;
   _bcidRef=0;
-  MapReader* mapreader=new MapReader();
-  mapreader->SetFileToRead(_mapFile);
-  mapreader->ReadFileAndBuildMaps();
-  _effMap=mapreader->getEfficiencyMap();
-  _mulMap=mapreader->getMultiplicityMap();
-  delete mapreader;
-  meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
-  //meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
-  streamlog_out( MESSAGE ) << "meanEfficiency = " << meanEfficiency << "\t"
-			   << "meanMultiplicity = " << meanMultiplicity << std::endl;
-  //}
   for(int i=0; i<48; i++){
-    _mulGlobal3[i]=0;
-    _effGlobal3[i]=0;
+    _mulGlobal3[i]=0.;
+    _effGlobal3[i]=0.;
     _countGlobal3[i]=0;
   }
 }
@@ -378,6 +357,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
   UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
   int trackBegin= (*clVec.begin())->getLayerID();
   int trackEnd=(*(clVec.end()-1))->getLayerID();
+  
   _trackend=trackEnd;
   if(trackBegin==1) trackBegin=0;
   if(trackEnd==46) trackEnd=47;
@@ -397,7 +377,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff3[K]=0;
       _countGlobal3[K]+=1;
     }
-    if( aLayer->getLayerTag()==fEfficientLayer ){
+    else if( aLayer->getLayerTag()==fEfficientLayer ){
       eff1[K]=aLayer->getEfficiency()[0];
       eff2[K]=aLayer->getEfficiency()[1];
       eff3[K]=aLayer->getEfficiency()[2];
@@ -459,7 +439,6 @@ void TrackProc::processEvent( LCEvent * evt )
       col = evt->getCollection( _hcalCollections[i].c_str() ) ;
       initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
-      calohit.clear();
       hitMap.clear();
       for(unsigned int K=0; K<48; K++){
 	eff1[K]=-1;
@@ -471,8 +450,7 @@ void TrackProc::processEvent( LCEvent * evt )
       }
       for (int j=0; j < numElements; ++j) {
       	CalorimeterHit * hit = dynamic_cast<CalorimeterHit*>( col->getElementAt( j ) ) ;
-      	if(IDdecoder(hit)["K-1"]>48) {continue;}
-      	calohit.push_back(hit);
+      	if(IDdecoder(hit)["K-1"]>=48) {continue;}
 	hitMap[IDdecoder(hit)["K-1"]].push_back(hit);
       }
       if(DATA) {
