@@ -96,7 +96,8 @@ void AsicMapProcessor::init()
   asicMap.clear();
   //fg: need to set default encoding in for reading old files...
   UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");  
-  
+
+
   //Root file output init 
   //Root file with control histograms
   if(ROOT){
@@ -173,6 +174,9 @@ void AsicMapProcessor::fillHisto()
   for(int i=0; i<activeLayers; i++)
     for(std::map<int,Asic*>::iterator it=asicMap.begin(); it!=asicMap.end(); it++)
       if(it->first/1000==i){
+	if( (it->second->getAsicPosition()[0]==5 || it->second->getAsicPosition()[0]==6) &&
+	    (it->second->getAsicPosition()[1]>2 && it->second->getAsicPosition()[1]<9 ) )
+	  continue;
 	if(it->second->getAsicCounter()>0){
 	  effMap[i]->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 	  effGlobal->Fill(it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
@@ -211,24 +215,24 @@ bool AsicMapProcessor::TrackSelection(std::vector<Cluster*> &clVec)
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clVec);
   aTrackingAlgo->DoTracking();
-  if(aTrackingAlgo->TrackFinderSuccess()){
-    ThreeVector px(-1,0,aTrackingAlgo->ReturnTrack()->getTrackParameters()[1]);
-    ThreeVector py(0,-1,aTrackingAlgo->ReturnTrack()->getTrackParameters()[3]);
-    TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
-    aTrackCaracteristics->Init(aTrackingAlgo->ReturnTrack());
-    aTrackCaracteristics->ComputeTrackCaracteritics();
-    if(aTrackCaracteristics->ReturnTrackChi2()>5||
-       px.cross(py).cosTheta() < 0.9||
-       findInteraction(clVec,aTrackingAlgo->ReturnTrack()->getTrackParameters()) ){
-      delete aTrackCaracteristics;
-      delete aTrackingAlgo;
-      return false;
-    }
-    delete aTrackCaracteristics;
-  }
-  else {delete aTrackingAlgo; return false;}
+  bool success=aTrackingAlgo->TrackFinderSuccess();
+  //if(aTrackingAlgo->TrackFinderSuccess()){
+  //   // ThreeVector px(-1,0,aTrackingAlgo->ReturnTrack()->getTrackParameters()[1]);
+  //   // ThreeVector py(0,-1,aTrackingAlgo->ReturnTrack()->getTrackParameters()[3]);
+  //   TrackCaracteristics* aTrackCaracteristics=new TrackCaracteristics();
+  //   aTrackCaracteristics->Init(aTrackingAlgo->ReturnTrack());
+  //   aTrackCaracteristics->ComputeTrackCaracteritics();
+  //   //if(px.cross(py).cosTheta() < 0.9||
+  //   // if(findInteraction(clVec,aTrackingAlgo->ReturnTrack()->getTrackParameters()) ){
+  //   //   delete aTrackCaracteristics;
+  //   //   delete aTrackingAlgo;
+  //   //   return false;
+  //   // }
+  //   delete aTrackCaracteristics;
+  // }
+  //if( {delete aTrackingAlgo; return false;}
   delete aTrackingAlgo;
-  return true;
+  return success==true ? true : false;
 }
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -298,7 +302,6 @@ void AsicMapProcessor::LayerProperties(std::vector<Cluster*> &clVec)
     Layer* aLayer=new Layer(K);
     aLayer->Init(clVec);
     aLayer->ComputeLayerProperties();
-    if( aLayer->getChi2()>10 ) continue;
     
     int asicKey=findAsicKey(K,aLayer->getxExpected(),aLayer->getyExpected());
     if(asicKey<0){delete aLayer; continue;}

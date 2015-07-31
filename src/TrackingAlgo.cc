@@ -85,11 +85,11 @@ void TrackingAlgo::ComputeTransverseRatio()
 void TrackingAlgo::DoTracking()
 {
   ComputeTransverseRatio();
-  //if( transverseRatio>0.05 ){
-  //  streamlog_out( DEBUG ) << "transverseRatio = " << transverseRatio << std::endl;
-  //  trackingSuccess=false; 
-  //  return;
-  //}
+  if( transverseRatio>0.05 ){
+    streamlog_out( DEBUG ) << "transverseRatio = " << transverseRatio << std::endl;
+    trackingSuccess=false; 
+    return;
+  }
   std::vector<ThreeVector> pos;
   std::vector<ThreeVector> weights;
   std::vector<int> clSize;
