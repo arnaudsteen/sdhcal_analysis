@@ -119,8 +119,10 @@ void TrackProc::init()
   meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
   meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
   for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
-    _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
-
+    if( _effMap[it->first]>0.8 )
+      _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
+    else 
+      _correctionMap[it->first]=meanMultiplicity/_mulMap[it->first];
 }
 
 //------------------------------------------------------------------------------------------------------------------------
