@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <time.h>
+#include <cmath>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
 #include <IMPL/CalorimeterHitImpl.h>
@@ -76,9 +77,18 @@ void MyHoughDisplayProc::init()
   int argc=0;
   char* argv=(char*)"";
   app = new TApplication("toto",&argc,&argv);
-  can = new TCanvas();
-  can->SetWindowSize(700,900);
-  can->Divide(1,2);
+  can_x = new TCanvas();
+  can_x->SetWindowSize(600,600);
+  can_x->Divide(1,2);
+  can_y = new TCanvas();
+  can_y->SetWindowSize(600,600);
+  can_y->Divide(1,2);
+  can_rtx = new TCanvas();
+  can_rtx->SetWindowSize(600,600);
+  can_rtx->Divide(1,2);
+  can_rty = new TCanvas();
+  can_rty->SetWindowSize(600,600);
+  can_rty->Divide(1,2);
   gStyle->SetOptStat(0);
   InitHisto();
   std::cout << "init ok" << std::endl;
@@ -167,10 +177,6 @@ void MyHoughDisplayProc::InitHisto()
   hIsolated_x->SetMarkerStyle(20);
   hIsolated_x->SetMarkerSize(.5);
   hIsolated_x->SetMarkerColor(kGreen);
-  //hHough_x=new TH2D("hHough_x","",200,0,50,384,0,96);
-  //hHough_x->SetMarkerStyle(20);
-  //hHough_x->SetMarkerSize(.5);
-  //hHough_x->SetMarkerColor(kYellow);
   hMip_y=new TH2D("hMip_y","",200,0,50,384,0,96);
   hMip_y->SetMarkerStyle(20);
   hMip_y->SetMarkerSize(.5);
@@ -189,10 +195,8 @@ void MyHoughDisplayProc::InitHisto()
   hIsolated_y->SetMarkerStyle(20);
   hIsolated_y->SetMarkerSize(.5);
   hIsolated_y->SetMarkerColor(kGreen);
-  //hHough_y=new TH2D("hHough_y","",200,0,50,384,0,96);
-  //hHough_y->SetMarkerStyle(20);
-  //hHough_y->SetMarkerSize(.5);
-  //hHough_y->SetMarkerColor(kYellow);
+  hHough_x=new TH2D("hHough_x","",100,-M_PI/2,M_PI/2,130,0,130);
+  hHough_y=new TH2D("hHough_y","",100,-M_PI/2,M_PI/2,130,0,130);
 }
 
 void MyHoughDisplayProc::fillHisto(TH2* hx, TH2* hy, Cluster* cl)
@@ -210,12 +214,12 @@ void MyHoughDisplayProc::resetHisto()
   hCore_x->Reset();
   hTrack_x->Reset();
   hIsolated_x->Reset();
-  //hHough_x->Reset();
+  hHough_x->Reset();
   hMip_y->Reset();
   hCore_y->Reset();
   hTrack_y->Reset();
   hIsolated_y->Reset();
-  //hHough_y->Reset();
+  hHough_y->Reset();
 }
 
 void MyHoughDisplayProc::drawEventDisplay()
@@ -227,26 +231,41 @@ void MyHoughDisplayProc::drawEventDisplay()
   hTrack_x->SetTitle(mytext);
   hIsolated_x->SetTitle(mytext);
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    //fillHisto(hCore_x,hCore_y,(*it));
     if( (*it)->getClusterTag()==fCore ) fillHisto(hCore_x,hCore_y,(*it));
-    if( (*it)->getClusterTag()==fMip ) fillHisto(hMip_x,hMip_y,(*it));
+    if( (*it)->getClusterTag()==fMip || (*it)->getClusterTag()==fIsolated ) fillHisto(hMip_x,hMip_y,(*it));
     if( (*it)->getClusterTag()==fTrack ) fillHisto(hTrack_x,hTrack_y,(*it));
-    if( (*it)->getClusterTag()==fIsolated ) fillHisto(hIsolated_x,hIsolated_y,(*it));
+    //if( (*it)->getClusterTag()==fIsolated ) fillHisto(hIsolated_x,hIsolated_y,(*it));
     //    if( (*it)->getClusterTag()==fHough ) fillHisto(hHough_x,hHough_y,(*it));
+    if( (*it)->getClusterTag()!=fCore )
+      for(int i=0;i<100;i++){
+    	hHough_x->Fill(-M_PI/2+i*M_PI/100,round((*it)->rhox[i]));
+    	hHough_y->Fill(-M_PI/2+i*M_PI/100,round((*it)->rhoy[i]));
+      }
   }
-  can->cd(1);
+  can_x->cd();
   hCore_x->Draw();
   hMip_x->Draw("same");
   hTrack_x->Draw("same");
   hIsolated_x->Draw("same");
-  can->cd(2);
+  can_y->cd();
   hCore_y->Draw();
   hMip_y->Draw("same");
   hTrack_y->Draw("same");
   hIsolated_y->Draw("same");
+  can_rtx->cd();
+  hHough_x->Draw("LEGO2");
+  can_rty->cd();
+  hHough_y->Draw("LEGO2");
+  
+  //std::cout << "hHough_x->GetBinContent(hHough_x->GetMax()) = " << hHough_x->GetBinContent(hHough_x->GetMaximumBin()) << std::endl;
 
-  can->Update();
-  sleep(5);
-  //can->WaitPrimitive();
+  can_x->Update();
+  can_y->Update();
+  can_rtx->Update();
+  can_rty->Update();
+  //sleep(5);
+  can_x->WaitPrimitive();
   resetHisto();
 }
 
@@ -284,7 +303,7 @@ void MyHoughDisplayProc::processEvent( LCEvent * evt )
       std::cout << "Exeption " << std::endl;
     }
   }
-  _nEvt ++ ;
+  _nEvt=evt->getEventNumber() ;
   std::cout << "Event processed : " << _nEvt << std::endl;
 }
 

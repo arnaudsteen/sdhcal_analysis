@@ -85,16 +85,19 @@ class MyHoughDisplayProc : public Processor {
   LCCollection * col;
   TH2* hCore_x;
   TH2* hMip_x;
-  //  TH2* hHough_x;
   TH2* hTrack_x;
   TH2* hIsolated_x;
   TH2* hCore_y;
   TH2* hMip_y;
-  //  TH2* hHough_y;
   TH2* hTrack_y;
   TH2* hIsolated_y;
+  TH2* hHough_x;
+  TH2* hHough_y;
   TApplication* app;
-  TCanvas *can;
+  TCanvas *can_x;
+  TCanvas *can_y;
+  TCanvas *can_rtx;
+  TCanvas *can_rty;
 } ;
 
 #endif

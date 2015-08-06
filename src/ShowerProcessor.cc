@@ -153,7 +153,7 @@ void ShowerProcessor::init()
   tree->Branch("LongiProfileBis",&longiProfile_bis,"LongiProfileBis[48]/I");
   tree->Branch("RadialProfile",&radialProfile,"RadialProfile[96]/I");
   tree->Branch("ClusterRadialProfile",&clusterRadialProfile,"ClusterRadialProfile[96]/I");
-  tree->Branch("RadialProfileBis",&radialProfileBis,"RadialProfileBis[96]/I");
+  tree->Branch("RadialProfileBis",&radialProfileBis,"RadialProfileBis[96]/F");
   tree->Branch("MaxRadius",&maxradius);
   tree->Branch("Length",&length);
   tree->Branch("aparatureAngle",&aparatureAngle);
@@ -187,9 +187,9 @@ void ShowerProcessor::init()
   tree->Branch("Nhit5by5",&nhit5By5);
 
   memset(longiProfile,0,48*sizeof(int));
-  memset(longiProfile_bis,0,48*sizeof(int));
+  memset(longiProfile_bis,0.,48*sizeof(float));
   memset(radialProfile,0,96*sizeof(int));
-  memset(radialProfileBis,0,96*sizeof(int));
+  memset(radialProfileBis,0.,96*sizeof(float));
 
   _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
@@ -205,6 +205,11 @@ void ShowerProcessor::init()
   delete mapreader;
   meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
   meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+  for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
+    if( _effMap[it->first]>0.8 )
+      _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
+    else 
+      _correctionMap[it->first]=meanMultiplicity/_mulMap[it->first];
 
   std::cout << "meanEfficiency = " << meanEfficiency << "\t meanMultiplicity = " << meanMultiplicity << std::endl;
   
@@ -424,8 +429,7 @@ void ShowerProcessor::ShowerAnalysis()
   nhit4By4=shower->getNhit4By4();
   nhit5By5=shower->getNhit5By5();
   if(DATA) {
-    shower->setMultiplicityMap(_mulMap);
-    shower->setEfficiencyMap(_effMap);
+    shower->setCorrectionMap(_correctionMap);
   }
   shower->CorrectedNumberOfHits(meanMultiplicity,meanEfficiency);
   nhit1Corrected=shower->getCorrectedNumberOfHits()[0];

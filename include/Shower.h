@@ -76,15 +76,17 @@ class Shower
   inline int* getLongiProfile(){return longiProfile;}
   inline int* getRadialProfile(){return radialProfile;}
   inline int* getClusterRadialProfile(){return clusterRadialProfile;}
-  inline int* getLongiProfileBis(){return longiProfileBis;}
-  inline int* getRadialProfileBis(){return radialProfileBis;}
+  inline float* getLongiProfileBis(){return longiProfileBis;}
+  inline float* getRadialProfileBis(){return radialProfileBis;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
   inline int getNhit2By2(){return nhit2By2;}
   inline int getNhit3By3(){return nhit3By3;}
   inline int getNhit4By4(){return nhit4By4;}
   inline int getNhit5By5(){return nhit5By5;}
-  inline void setMultiplicityMap(std::map<int,double> a_map){_mulMap=a_map;}
-  inline void setEfficiencyMap(std::map<int,double> a_map){_effMap=a_map;}
+
+  inline void setCorrectionMap(std::map<int,double> &map){_correctionMap=map;}
+  /* inline void setMultiplicityMap(std::map<int,double> a_map){_mulMap=a_map;} */
+  /* inline void setEfficiencyMap(std::map<int,double> a_map){_effMap=a_map;} */
 
   float Radius(){return radius;}
  private:
@@ -97,12 +99,13 @@ class Shower
   std::vector<float> showerBarycenterError;
   std::map<int,int> nhitInLayer;
   std::vector<float> _nhitCorrected;
-  std::map<int,double> _mulMap;
-  std::map<int,double> _effMap;
+  /* std::map<int,double> _mulMap; */
+  /* std::map<int,double> _effMap; */
+  std::map<int,double> _correctionMap;
   int longiProfile[48];//relative to shower starting layer
-  int longiProfileBis[48];//relative to calorimeter front
+  float longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
-  int radialProfileBis[96];//primary track not include if any
+  float radialProfileBis[96];//primary track not include if any
   int clusterRadialProfile[96];
   int firstLayer;
   int lastLayer;

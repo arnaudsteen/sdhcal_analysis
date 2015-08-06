@@ -32,8 +32,9 @@ Shower::~Shower()
   showerBarycenterError.clear();  
   nhitInLayer.clear();
   _nhitCorrected.clear();
-  _mulMap.clear();
-  _effMap.clear();
+  _correctionMap.clear();
+  // _mulMap.clear();
+  // _effMap.clear();
 }
 
 void Shower::FindClustersInLayer()
@@ -122,10 +123,11 @@ void Shower::CorrectedNumberOfHits(float meanMul=0.0, float meanEff=0.0)
 {
   for(std::vector<CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     int asicKey=findAsicKey(*it);
-    if( asicKey>0 && _mulMap.size()>0 && _mulMap[asicKey]>0 && _effMap.size()>0 && _effMap[asicKey]){
-      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
-      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
-      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
+    //if( asicKey>0 && _mulMap.size()>0 && _mulMap[asicKey]>0 && _effMap.size()>0 && _effMap[asicKey]){
+    if( asicKey>0 && _correctionMap.size()!=0 && _correctionMap[asicKey] ){
+      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=_correctionMap[asicKey];
+      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=_correctionMap[asicKey];
+      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=_correctionMap[asicKey];
     }
     else{
       if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=1;
@@ -291,12 +293,18 @@ int Shower::FirstIntLayer()
 void Shower::LongitudinalProfile(int Zbegin,bool show)
 {
   memset(longiProfile,0,48*sizeof(int));
-  memset(longiProfileBis,0,48*sizeof(int));
-  if(Zbegin<0) return;
-  for(std::map<int,int>::iterator it=nhitInLayer.begin(); it!=nhitInLayer.end(); ++it){
-    longiProfileBis[it->first]=it->second;
-    if(it->first>=Zbegin)
-      longiProfile[it->first-Zbegin]=it->second;
+  memset(longiProfileBis,0.0,48*sizeof(float));
+
+  for(std::map<int,std::vector<EVENT::CalorimeterHit*> >::iterator it=hitMap.begin(); it!=hitMap.end(); ++it){
+    for( std::vector<EVENT::CalorimeterHit*>::iterator jt=it->second.begin(); jt!=it->second.end(); ++jt){
+      if(it->first>=Zbegin){
+	longiProfile[it->first-Zbegin]++;
+	int asicKey=findAsicKey(*jt);
+	if( asicKey>0 && _correctionMap.size()!=0 && _correctionMap[asicKey] )
+	  longiProfileBis[it->first-Zbegin]+=_correctionMap[asicKey];
+	else longiProfileBis[it->first-Zbegin]++;
+      }
+    }
   }
   if(show){
     for(unsigned int k=Zbegin; k<48; k++){
@@ -317,11 +325,14 @@ void Shower::RadialProfile(int firstIntLayer,bool show)
 
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     int bin=(int)round(dist->CalculateDistance(*it)/10.05);
-    if(bin<96)
-      radialProfile[bin]++;
-    else continue;
-    if(idDecoder(*it)["K-1"]>=firstIntLayer)
-      radialProfileBis[bin]++;
+    if(bin>96) continue;
+    radialProfile[bin]++;
+    int asicKey=findAsicKey(*it);
+    if( asicKey>0 && _correctionMap.size()!=0 && _correctionMap[asicKey] )
+      radialProfileBis[bin]+=_correctionMap[asicKey];
+    else radialProfileBis[bin]++;
+    // if(idDecoder(*it)["K-1"]>=firstIntLayer)
+    //    radialProfileBis[bin]++;
   }
   delete dist;
   if(show){

@@ -123,6 +123,7 @@ class ShowerProcessor : public Processor {
   std::string _mapFile;
   std::map<int,double> _effMap;
   std::map<int,double> _mulMap;
+  std::map<int,double> _correctionMap;
   float meanEfficiency;
   float meanMultiplicity;
 
@@ -168,12 +169,12 @@ class ShowerProcessor : public Processor {
   int TrackMultiplicity;
   float meanClusterSize;
   int longiProfile[48];
-  int longiProfile_bis[48];
+  float longiProfile_bis[48];
   int radialProfile[96];
   //int radialProfilePlus[96];
   //int radialProfileMinus[96];
   int clusterRadialProfile[96];
-  int radialProfileBis[96];
+  float radialProfileBis[96];
   int clusterMips;
   int clusterIsolated;
   int nshower;
