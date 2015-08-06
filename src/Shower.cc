@@ -123,9 +123,9 @@ void Shower::CorrectedNumberOfHits(float meanMul=0.0, float meanEff=0.0)
   for(std::vector<CalorimeterHit*>::iterator it=hits.begin(); it!=hits.end(); ++it){
     int asicKey=findAsicKey(*it);
     if( asicKey>0 && _mulMap.size()>0 && _mulMap[asicKey]>0 && _effMap.size()>0 && _effMap[asicKey]){
-      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
-      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
-      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=meanMul/**meanEff*//(_mulMap[asicKey]/**_effMap[asicKey]*/);
+      if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
+      if( (int)(*it)->getEnergy()==2 ) _nhitCorrected.at(1)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
+      if( (int)(*it)->getEnergy()==3 ) _nhitCorrected.at(2)+=meanMul*meanEff*(_mulMap[asicKey]*_effMap[asicKey]);
     }
     else{
       if( (int)(*it)->getEnergy()==1 ) _nhitCorrected.at(0)+=1;

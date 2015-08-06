@@ -423,8 +423,10 @@ void ShowerProcessor::ShowerAnalysis()
   nhit3By3=shower->getNhit3By3();
   nhit4By4=shower->getNhit4By4();
   nhit5By5=shower->getNhit5By5();
-  shower->setMultiplicityMap(_mulMap);
-  shower->setEfficiencyMap(_effMap);
+  if(DATA) {
+    shower->setMultiplicityMap(_mulMap);
+    shower->setEfficiencyMap(_effMap);
+  }
   shower->CorrectedNumberOfHits(meanMultiplicity,meanEfficiency);
   nhit1Corrected=shower->getCorrectedNumberOfHits()[0];
   nhit2Corrected=shower->getCorrectedNumberOfHits()[1];

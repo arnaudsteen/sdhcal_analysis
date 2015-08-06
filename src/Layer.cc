@@ -14,7 +14,6 @@ Layer::Layer(int ID)
   correctedMultiplicity=0;
   layerTag=fUndefinedLayer;
   effDistanceCut=50.; //mm
-  meanMultiplicity=0;
   chi2=0;
   layerGap=26.131; //mm default
   layerZPosition=layID*layerGap;
@@ -31,7 +30,6 @@ Layer::Layer(int ID,float layGap)
   correctedMultiplicity=0;
   layerTag=fUndefinedLayer;
   effDistanceCut=25.; //mm
-  meanMultiplicity=0;
   chi2=0;
   layerGap=layGap;
   layerZPosition=layID*layerGap;
@@ -154,8 +152,8 @@ void Layer::ComputeLayerProperties()
 			     << "\t effThr[2] = " << effThr[2] 
 			     << std::endl;
 
-      if(meanMultiplicity!=0)
-	this->MultiplicityMapCorrection( (*closestIt) );
+      if(_correctionMap.size()>0)
+	MapCorrection( (*closestIt) );
     }
     else{
       this->setLayerTag(fUnefficientLayer);
@@ -180,11 +178,11 @@ void Layer::ComputeLayerProperties()
   delete aTrackingAlgo;
 }
 
-void Layer::MultiplicityMapCorrection(Cluster* cluster)
+void Layer::MapCorrection(Cluster* cluster)
 {
   int asicKey=findAsicKey(cluster);
-  if( asicKey>0 && _multiMap.size()!=0 && _multiMap[asicKey] )
-    correctedMultiplicity=cluster->getHits().size()*meanMultiplicity/_multiMap[asicKey];
+  if( asicKey>0 && _correctionMap.size()!=0 && _correctionMap[asicKey] )
+    correctedMultiplicity=cluster->getHits().size()*_correctionMap[asicKey];
   else 
     correctedMultiplicity=multiplicity;
 }

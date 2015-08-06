@@ -30,7 +30,7 @@ class Layer
   void Init(std::vector<Cluster*> &clVec);
   void Init(Track* aTrack);
   void ComputeLayerProperties();
-  void MultiplicityMapCorrection(Cluster* cluster);
+  void MapCorrection(Cluster* cluster);
   int findAsicKey(Cluster* cluster);
   void setLayerEdges(float* b);
   
@@ -40,8 +40,9 @@ class Layer
   inline void setLayerTag(LayerTag tag){layerTag=tag;}
   inline LayerTag getLayerTag(){return layerTag;}
   inline void setEfficiencyDistanceCut(float val){effDistanceCut=val;}
-  inline void setMultiplicityMap(std::map<int,double> &mulmap){_multiMap=mulmap;}
-  inline void setMeanMultiplicity(float val){meanMultiplicity=val;}
+
+  inline void setCorrectionMap(std::map<int,double> &map){_correctionMap=map;}
+
   inline float getChi2(){return chi2;}
   inline void setLayerZPosition(float pos){layerZPosition=pos;}
   inline float getxExpected(){return xExpected;}
@@ -50,11 +51,10 @@ class Layer
   int layID;
   float layerZPosition;
   float effDistanceCut;
-  float meanMultiplicity;
   std::vector<Cluster*> clusters;
   std::vector<Cluster*> clustersInLayer;
   std::vector<int> effThr;
-  std::map<int,double> _multiMap;
+  std::map<int,double> _correctionMap;
   int multiplicity;
   float correctedMultiplicity;
   float chi2;

@@ -102,6 +102,7 @@ class TrackProc : public Processor {
   std::string _mapFile;
   std::map<int,double> _effMap;
   std::map<int,double> _mulMap;
+  std::map<int,double> _correctionMap;
   
  private:
   

@@ -22,7 +22,6 @@ using namespace std;
 
 TrackProc aTrackProc ;
 
-
 TrackProc::TrackProc() : Processor("TrackProc") {
 
   _description = "TrackProc calculates shower variable" ;
@@ -101,7 +100,7 @@ void TrackProc::init()
   tree->Branch("chi2Global",&_chi2Global);
   tree->Branch("trackEnd",&_trackend);
   tree->Branch("trackParams",&trackParams,"trackParams[4]/F");
-  _timeCut = 20*pow(10.0,9); //20 sec
+  _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
   _bcidRef=0;
   for(int i=0; i<48; i++){
@@ -119,6 +118,8 @@ void TrackProc::init()
   delete mapreader;
   meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
   meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+  for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
+    _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
 
 }
 
@@ -387,8 +388,8 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       aLayer->setLayerZPosition( (K*26.131-625.213) );
     }
     else{
-      aLayer->setMultiplicityMap(_mulMap);
-      aLayer->setMeanMultiplicity(meanMultiplicity);
+      aLayer->setCorrectionMap(_correctionMap);
+      //WARNING : NOT OPTIMIZED AT ALL
     }
     aLayer->ComputeLayerProperties();
     chi2_[K]=aLayer->getChi2();
@@ -404,7 +405,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
       eff3[K]=aLayer->getEfficiency()[2];
       multi[K]=aLayer->getMultiplicity();
       multiCorrected[K]=aLayer->getCorrectedMultiplicity();
-      _mulGlobal3[K]+=multi[K];
+      _mulGlobal3[K]+=multiCorrected[K];//multi[K];
       _effGlobal3[K]+=1;
       _countGlobal3[K]+=1;
     }

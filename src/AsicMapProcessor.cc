@@ -174,9 +174,9 @@ void AsicMapProcessor::fillHisto()
   for(int i=0; i<activeLayers; i++)
     for(std::map<int,Asic*>::iterator it=asicMap.begin(); it!=asicMap.end(); it++)
       if(it->first/1000==i){
-	if( (it->second->getAsicPosition()[0]==5 || it->second->getAsicPosition()[0]==6) &&
-	    (it->second->getAsicPosition()[1]>2 && it->second->getAsicPosition()[1]<9 ) )
-	  continue;
+	// if( (it->second->getAsicPosition()[0]>4 && it->second->getAsicPosition()[0]<8) &&
+	//     (it->second->getAsicPosition()[1]>4 && it->second->getAsicPosition()[1]<8 ) )
+	//   continue;
 	if(it->second->getAsicCounter()>0){
 	  effMap[i]->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 	  effGlobal->Fill(it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
