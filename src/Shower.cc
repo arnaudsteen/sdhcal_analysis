@@ -292,8 +292,10 @@ int Shower::FirstIntLayer()
 
 void Shower::LongitudinalProfile(int Zbegin,bool show)
 {
-  memset(longiProfile,0,48*sizeof(int));
-  memset(longiProfileBis,0.0,48*sizeof(float));
+  for(int i=0; i<48; i++){
+    longiProfile[i]=0;
+    longiProfileBis[i]=0;
+  }
 
   for(std::map<int,std::vector<EVENT::CalorimeterHit*> >::iterator it=hitMap.begin(); it!=hitMap.end(); ++it){
     for( std::vector<EVENT::CalorimeterHit*>::iterator jt=it->second.begin(); jt!=it->second.end(); ++jt){
@@ -310,6 +312,19 @@ void Shower::LongitudinalProfile(int Zbegin,bool show)
     for(unsigned int k=Zbegin; k<48; k++){
       streamlog_out( MESSAGE ) << "PROFILE => :layer:\t" << k << "\t :nhit:\t" << longiProfile[k] << std::endl;
     } 
+  }
+}
+
+void Shower::ClusterLongitudinalProfile(int Zbegin)
+{
+  for(int i=0; i<48; i++){
+    clusterLongiProfile[i]=0;
+    clusterLongiProfileBis[i]=0;
+  }
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
+    if( (*it)->getLayerID()>=Zbegin)
+      clusterLongiProfile[(*it)->getLayerID()-Zbegin]++;
+    clusterLongiProfileBis[(*it)->getLayerID()]++;
   }
 }
 
@@ -448,6 +463,14 @@ float Shower::MeanClusterSize()
     meanSize+=(*it)->getHits().size();
   }
   return meanSize/clusters.size();
+}
+
+std::vector<int> Shower::ClusterSize()
+{
+  std::vector<int> vec;
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
+    vec.push_back( (*it)->getHits().size() );
+  return vec;
 }
 
 int Shower::FirstLayerRMS()

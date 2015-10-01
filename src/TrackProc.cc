@@ -118,8 +118,9 @@ void TrackProc::init()
   delete mapreader;
   meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
   meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+  //  meanMultiplicity=1.6;
   for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
-    if( _effMap[it->first]>0.8 )
+    if( _effMap[it->first]>0.9 )
       _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
     else 
       _correctionMap[it->first]=meanMultiplicity/_mulMap[it->first];
@@ -420,7 +421,7 @@ void TrackProc::LayerProperties(std::vector<Cluster*> &clVec)
     if(K==-1||K==48)continue;
     if(eff1[K]==-1)continue;
     _effGlobal+=eff1[K];
-    _mulGlobal+=multi[K];
+    _mulGlobal+=multiCorrected[K];
     count++;
   }
   _mulGlobal=_mulGlobal/_effGlobal;

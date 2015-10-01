@@ -32,6 +32,7 @@ class Shower
   int Nlayer(){return nhitInLayer.size();}
   int NInteractingLayer(){return nInteractingLayer;}
   void LongitudinalProfile(int Zbegin,bool show=false); 
+  void ClusterLongitudinalProfile(int Zbegin);
   void RadialProfile(int firstIntLayer, bool show=false);
   void ClusterRadialProfile(bool show=false);
   float CentralHitRatio();
@@ -41,6 +42,7 @@ class Shower
   int NhitInCube(int CubeSize);
   int ClusterEMNumber();
   float MeanClusterSize();
+  std::vector<int> ClusterSize();
   int FirstLayerRMS();
   std::vector<int> Density();  
   int findAsicKey(const int layer,const float *par);
@@ -78,6 +80,8 @@ class Shower
   inline int* getClusterRadialProfile(){return clusterRadialProfile;}
   inline float* getLongiProfileBis(){return longiProfileBis;}
   inline float* getRadialProfileBis(){return radialProfileBis;}
+  inline int* getClusterLongiProfile(){return clusterLongiProfile;}
+  inline int* getClusterLongiProfileBis(){return clusterLongiProfileBis;}
   inline int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
   inline int getNhit2By2(){return nhit2By2;}
   inline int getNhit3By3(){return nhit3By3;}
@@ -107,6 +111,8 @@ class Shower
   int radialProfile[96];
   float radialProfileBis[96];//primary track not include if any
   int clusterRadialProfile[96];
+  int clusterLongiProfile[48];
+  int clusterLongiProfileBis[48];
   int firstLayer;
   int lastLayer;
   std::vector<int> Nhit;

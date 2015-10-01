@@ -154,6 +154,7 @@ void Layer::ComputeLayerProperties()
 
       if(_correctionMap.size()>0)
 	MapCorrection( (*closestIt) );
+      else correctedMultiplicity=multiplicity;
     }
     else{
       this->setLayerTag(fUnefficientLayer);

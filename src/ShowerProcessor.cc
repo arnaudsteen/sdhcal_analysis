@@ -151,6 +151,8 @@ void ShowerProcessor::init()
   tree->Branch("Radius",&radius);
   tree->Branch("LongiProfile",&longiProfile,"LongiProfile[48]/I");
   tree->Branch("LongiProfileBis",&longiProfile_bis,"LongiProfileBis[48]/I");
+  tree->Branch("ClusterLongiProfile",&clusterLongiProfile,"ClusterLongiProfile[48]/I");
+  tree->Branch("ClusterLongiProfileBis",&clusterLongiProfileBis,"ClusterLongiProfileBis[48]/I");
   tree->Branch("RadialProfile",&radialProfile,"RadialProfile[96]/I");
   tree->Branch("ClusterRadialProfile",&clusterRadialProfile,"ClusterRadialProfile[96]/I");
   tree->Branch("RadialProfileBis",&radialProfileBis,"RadialProfileBis[96]/F");
@@ -170,6 +172,7 @@ void ShowerProcessor::init()
   tree->Branch("MultiplicityPerLayer","std::vector<double>",&mul_layer);
   tree->Branch("MeanClusterSize",&meanClusterSize);
   tree->Branch("Nclusters",&nclusters);
+  tree->Branch("ClusterSize","std::vector<int>",&clusterSize);
   tree->Branch("TrackClusterSize","std::vector<int>",&trackclSize);
   tree->Branch("TrackClusterNumber","std::vector<int>",&trackNclusters);
   tree->Branch("ClusterMip",&clusterMips);
@@ -190,6 +193,8 @@ void ShowerProcessor::init()
   memset(longiProfile_bis,0.,48*sizeof(float));
   memset(radialProfile,0,96*sizeof(int));
   memset(radialProfileBis,0.,96*sizeof(float));
+  memset(clusterLongiProfile,0,48*sizeof(int));
+  memset(clusterLongiProfileBis,0.,48*sizeof(float));
 
   _timeCut = 5*pow(10.0,9); //20 sec
   _prevBCID=0;
@@ -492,9 +497,11 @@ void ShowerProcessor::ShowerAnalysis()
   nclusters=shower->getClusters().size();
   clusterEM=shower->ClusterEMNumber();
   meanClusterSize=shower->MeanClusterSize(); 
+  clusterSize=shower->ClusterSize(); 
 
   //Profile
   shower->LongitudinalProfile(begin);
+  shower->ClusterLongitudinalProfile(begin);
   shower->ClusterRadialProfile();
   shower->RadialProfile(begin);
   for(int i=0;i<48;i++){
@@ -506,6 +513,8 @@ void ShowerProcessor::ShowerAnalysis()
     clusterRadialProfile[48+i]=shower->getClusterRadialProfile()[48+i];
     radialProfileBis[i]=shower->getRadialProfileBis()[i];
     radialProfileBis[48+i]=shower->getRadialProfileBis()[48+i];
+    clusterLongiProfile[i]=shower->getClusterLongiProfile()[i];
+    clusterLongiProfileBis[i]=shower->getClusterLongiProfileBis()[i];
   }
 }
 

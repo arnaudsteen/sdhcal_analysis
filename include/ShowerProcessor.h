@@ -170,6 +170,8 @@ class ShowerProcessor : public Processor {
   float meanClusterSize;
   int longiProfile[48];
   float longiProfile_bis[48];
+  int clusterLongiProfile[48];
+  int clusterLongiProfileBis[48];
   int radialProfile[96];
   //int radialProfilePlus[96];
   //int radialProfileMinus[96];
