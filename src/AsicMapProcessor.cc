@@ -419,15 +419,24 @@ void AsicMapProcessor::end(){
   double efficiency;
   double multiplicity;
   double efficiencyError;
+  double multiplicityError;
   for(std::map<int,Asic*>::iterator it=asicMap.begin(); it!=asicMap.end(); ++it){
     efficiency=((double)it->second->getAsicEfficiency()/it->second->getAsicCounter());
     multiplicity=((double)it->second->getAsicMultiplicity()/it->second->getAsicEfficiency());
     efficiencyError=sqrt((double)efficiency/it->second->getAsicCounter()*(1-efficiency));
+    multiplicityError=sqrt((double)it->second->getAsicMultiplicitySquare()/it->second->getAsicEfficiency()-multiplicity*multiplicity);
+    
+    std::cout << "it->second->getAsicKey() " << it->second->getAsicKey() << " "
+	      << "it->second->getAsicEfficiency() " << it->second->getAsicEfficiency() << " "
+	      << "it->second->getAsicMultiplicity() " << multiplicity << " "
+	      << "it->second->getAsicMultiplicitySquare() " << it->second->getAsicMultiplicitySquare() << std::endl;
+    
     txtout << it->second->getAsicKey() << "\t" 
 	   << it->second->getAsicCounter() << "\t" 
 	   << efficiency << "\t"
 	   << efficiencyError << "\t"
-	   << multiplicity << std::endl;
+	   << multiplicity << "\t" 
+	   << multiplicityError << std::endl;
     delete it->second;
   }
   txtout.close();

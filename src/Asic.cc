@@ -11,6 +11,7 @@ Asic::Asic(int theKey)
   ncount=0;
   neff=0;
   multi=0;
+  multi_square=0;
   position.push_back(asicNum%12);
   position.push_back(asicNum/12);
 }
@@ -23,4 +24,5 @@ void Asic::Update(int clusterSize)
   }
   neff++;
   multi+=clusterSize;
+  multi_square+=clusterSize*clusterSize;
 }

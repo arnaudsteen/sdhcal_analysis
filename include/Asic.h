@@ -19,6 +19,7 @@ class Asic
   const int getAsicCounter(){return ncount;}
   const int getAsicEfficiency(){return neff;}
   const int getAsicMultiplicity(){return multi;}
+  const int getAsicMultiplicitySquare(){return multi_square;}
   std::vector<int> getAsicPosition(){return position;}
  private:
   int layer;
@@ -27,6 +28,7 @@ class Asic
   int ncount;
   int neff;
   int multi;
+  int multi_square;
   std::vector<int> position; //position in layer x,y=[1->12]
 };
 
