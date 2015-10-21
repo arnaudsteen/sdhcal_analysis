@@ -142,8 +142,13 @@ void AsicMapProcessor::doTrackStudy()
     cluster->setClusterID(ID);
     clusters.push_back(cluster);
   }
-  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
+  for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it){
     (*it)->IsolatedCluster(clusters);
+    //std::cout << "new cluster" << std::endl;
+    //for(std::vector<EVENT::CalorimeterHit*>::iterator jt=(*it)->getHits().begin(); jt!=(*it)->getHits().end(); ++jt) {
+    //  std::cout << IDdecoder(*jt)["I"] << "\t" << IDdecoder(*jt)["J"] << "\t" << IDdecoder(*jt)["K-1"] << std::endl;
+    //}
+  }
   for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
     if( (*it)->isIsolated() ){
       streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition().x() << " " << (*it)->getClusterPosition().y() << " " << (*it)->getClusterPosition().z() 
@@ -380,7 +385,6 @@ void AsicMapProcessor::processEvent( LCEvent * evt )
     std::string colName =  _hcalCollections[i] ;
     try{
       col = evt->getCollection( _hcalCollections[i].c_str() ) ;
-      initString = col->getParameters().getStringVal(LCIO::CellIDEncoding);
       numElements = col->getNumberOfElements();
       calohit.clear();
       for (int j=0; j < numElements; ++j) {
@@ -426,10 +430,10 @@ void AsicMapProcessor::end(){
     efficiencyError=sqrt((double)efficiency/it->second->getAsicCounter()*(1-efficiency));
     multiplicityError=sqrt((double)it->second->getAsicMultiplicitySquare()/it->second->getAsicEfficiency()-multiplicity*multiplicity);
     
-    std::cout << "it->second->getAsicKey() " << it->second->getAsicKey() << " "
-	      << "it->second->getAsicEfficiency() " << it->second->getAsicEfficiency() << " "
-	      << "it->second->getAsicMultiplicity() " << multiplicity << " "
-	      << "it->second->getAsicMultiplicitySquare() " << it->second->getAsicMultiplicitySquare() << std::endl;
+    streamlog_out( DEBUG ) << "it->second->getAsicKey() " << it->second->getAsicKey() << " "
+			   << "it->second->getAsicEfficiency() " << it->second->getAsicEfficiency() << " "
+			   << "it->second->getAsicMultiplicity() " << multiplicity << " "
+			   << "it->second->getAsicMultiplicitySquare() " << it->second->getAsicMultiplicitySquare() << std::endl;
     
     txtout << it->second->getAsicKey() << "\t" 
 	   << it->second->getAsicCounter() << "\t" 

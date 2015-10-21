@@ -13,7 +13,7 @@ Cluster::Cluster(int layID)
   memset(rhox,0,tetamax*sizeof(int));
   memset(rhoy,0,tetamax*sizeof(int));
   setClusterTag(fUndefined);
-  UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
+  //UTIL::CellIDDecoder<CalorimeterHit*>::setDefaultEncoding("M:3,S-1:3,I:9,J:9,K-1:6");
   layerID=layID;
   ThreeVector pos(0,0,0);
   this->setClusterPosition(pos);
