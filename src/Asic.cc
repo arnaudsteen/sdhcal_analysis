@@ -17,6 +17,22 @@ const int a_beautiful_table[48]={
   48,47,46,45
 };
 
+const int an_inverted_beautiful_table[48]={
+  4,3,2,1,
+  5,6,7,8,
+  12,11,10,9,
+  13,14,15,16,
+  20,19,18,17,
+  21,22,23,24,
+  28,27,26,25,
+  29,30,31,32,
+  36,35,34,33,
+  37,38,39,40,
+  44,43,42,41,
+  45,46,47,48
+};
+
+
 const int another_beautiful_table[144]={
   181,94,30, 
   174,175,176,
@@ -120,7 +136,7 @@ void Asic::findAsicID()
     throw;
   }
   int jInSlab=jasic%4;
-  asic_id=a_beautiful_table[4*iasic+jInSlab];
+  asic_id=an_inverted_beautiful_table[4*iasic+jInSlab];
 }
 
 void Asic::findDifID()

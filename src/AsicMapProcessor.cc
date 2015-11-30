@@ -301,7 +301,7 @@ void AsicMapProcessor::LayerProperties(std::vector<Cluster*> &clVec)
 {
   int trackBegin= (*clVec.begin())->getLayerID();
   int trackEnd=(*(clVec.end()-1))->getLayerID();
-  if(trackBegin==1) trackBegin=0;
+  if(trackBegin==1 || trackBegin==2) trackBegin=0;
   if(trackEnd==46) trackEnd=47;
   for(int K=trackBegin; K<=trackEnd; K++){
     Layer* aLayer=new Layer(K);

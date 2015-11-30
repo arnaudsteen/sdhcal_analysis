@@ -78,6 +78,11 @@ AsicAnalysisProcessor::AsicAnalysisProcessor() : Processor("AsicAnalysisProcesso
 			      "Minimal value for cos theta to keep the track",
 			      _cosThetaCut,
 			      float(0.0));
+
+  registerProcessorParameter( "RemoveEdges" ,
+			      "Boolean to set if edges should be removed in the analysis",
+			      _removeEdges,
+			      bool(false));
 }
 
 void AsicAnalysisProcessor::init()
@@ -251,7 +256,7 @@ void AsicAnalysisProcessor::LayerProperties(std::vector<Cluster*> &clVec)
 {
   int trackBegin= (*clVec.begin())->getLayerID();
   int trackEnd=(*(clVec.end()-1))->getLayerID();
-  if(trackBegin==1) trackBegin=0;
+  if(trackBegin==1 || trackBegin==2) trackBegin=0;
   if(trackEnd==46) trackEnd=47;
   for(int K=trackBegin; K<=trackEnd; K++){
     Layer* aLayer=new Layer(K);
@@ -277,9 +282,11 @@ int AsicAnalysisProcessor::findAsicKey(int layer,float x, float y)
 {
   float I=round( x/10.408 );
   float J=round( y/10.408 );
-  if(I>96||I<0||J>96||J<0) return -1;
+  if(I>96||I<1||J>96||J<1) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;
+  if(_removeEdges==true && (jnum==0||jnum==11||inum==0||inum==11) )
+    return -1;
   int num=inum*12+jnum;
   return layer*1000+num;
 }

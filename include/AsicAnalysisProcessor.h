@@ -73,6 +73,7 @@ class AsicAnalysisProcessor : public Processor {
   std::string _outputRelCollection;
 
   int activeLayers;
+  bool _removeEdges;
   std::map<int, std::vector<EVENT::CalorimeterHit*> > hitMap;
   std::vector<EVENT::CalorimeterHit*> calohit;
   std::vector<Cluster*> clusters;
