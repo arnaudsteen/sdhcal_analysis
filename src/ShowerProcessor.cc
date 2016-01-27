@@ -70,10 +70,16 @@ ShowerProcessor::ShowerProcessor() : Processor("ShowerProcessor") {
 			      NOT_FULL_ANALYSIS,
 			      false);
 
+  registerProcessorParameter( "MultiplicityAngleCorrectionFactor" ,
+			      "Correction factor for the multiplicity when track is emitted with an angle",
+			      _multiCorrectionFactor,
+			      float(0.445) ); 
+
   registerProcessorParameter( "Data" ,
 			      "Boolean to know if ShowerProcessor is running on data or on simulation",
 			      DATA,
 			      false);
+
 
   registerProcessorParameter( "MeanMultiplicity" ,
 			      "mean value of sdhcal asic multiplicity",
@@ -122,9 +128,8 @@ void ShowerProcessor::init()
     
   tree = (TTree*)file->Get("tree");
   if(!tree){
-    std::cout << "tree creation" << std::endl; 
+    streamlog_out( DEBUG ) << "tree creation" << std::endl; 
     tree = new TTree("tree","Shower variables");
-    //std::cout << tree << std::endl;
   }
   tree->Branch("eventTime",&evtTime);
   tree->Branch("spillEventTime",&spillEvtTime);
@@ -189,6 +194,9 @@ void ShowerProcessor::init()
   tree->Branch("Nhit4by4",&nhit4By4);
   tree->Branch("Nhit5by5",&nhit5By5);
 
+  tree->Branch("Efficiency",&efficiency,"Efficiency[48]/F");
+  tree->Branch("Multiplicity",&multiplicity,"Multiplicity[48]/F");
+
   memset(longiProfile,0,48*sizeof(int));
   memset(longiProfile_bis,0.,48*sizeof(float));
   memset(radialProfile,0,96*sizeof(int));
@@ -202,21 +210,21 @@ void ShowerProcessor::init()
   firstShowerInSpill=1;
   firstSpillEvtFound=true;
 
-  MapReader* mapreader=new MapReader();
-  mapreader->SetFileToRead(_mapFile);
-  mapreader->ReadFileAndBuildMaps();
-  _effMap=mapreader->getEfficiencyMap();
-  _mulMap=mapreader->getMultiplicityMap();
-  delete mapreader;
-  meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
-  meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
-  for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
-    if( _effMap[it->first]>0.8 )
-      _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
-    else 
-      _correctionMap[it->first]=meanMultiplicity/_mulMap[it->first];
+  // MapReader* mapreader=new MapReader();
+  // mapreader->SetFileToRead(_mapFile);
+  // mapreader->ReadFileAndBuildMaps();
+  // _effMap=mapreader->getEfficiencyMap();
+  // _mulMap=mapreader->getMultiplicityMap();
+  // delete mapreader;
+  // meanEfficiency=std::accumulate(_effMap.begin(),_effMap.end(),0.0,MapReaderFunction::add_map_value)/_effMap.size();
+  // meanMultiplicity=std::accumulate(_mulMap.begin(),_mulMap.end(),0.0,MapReaderFunction::add_map_value)/_mulMap.size();
+  // for(std::map<int,double>::iterator it=_mulMap.begin(); it!=_mulMap.end(); ++it)
+  //   if( _effMap[it->first]>0.8 )
+  //     _correctionMap[it->first]=meanEfficiency*meanMultiplicity/(_mulMap[it->first]*_effMap[it->first]);
+  //   else 
+  //     _correctionMap[it->first]=meanMultiplicity/_mulMap[it->first];
 
-  std::cout << "meanEfficiency = " << meanEfficiency << "\t meanMultiplicity = " << meanMultiplicity << std::endl;
+  // std::cout << "meanEfficiency = " << meanEfficiency << "\t meanMultiplicity = " << meanMultiplicity << std::endl;
   
 }
 
@@ -277,7 +285,7 @@ void ShowerProcessor::findEventTime(LCEvent* evt,LCCollection* col)
       
     }
     catch (std::exception e){
-      std::cout<<"No hits "<<std::endl;
+      streamlog_out( ERROR )<<"No hits "<<std::endl;
       return ;
     } 
   }
@@ -321,7 +329,7 @@ void ShowerProcessor::findSpillEventTime(LCEvent* evt,LCCollection* col)
       
     }
     catch (std::exception e){
-      std::cout<<"No hits "<<std::endl;
+      streamlog_out( MESSAGE )<<"No hits "<<std::endl;
       return ;
     } 
   }
@@ -380,13 +388,13 @@ void ShowerProcessor::doShower()
   std::vector<EVENT::CalorimeterHit*> temp;
   temp.clear();
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=calohit.begin(); it!=calohit.end(); ++it){
-    if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 )
-      continue;
+    // if( idDecoder(*it)["I"]<=8 || idDecoder(*it)["I"]>=89 || idDecoder(*it)["J"]<=8 || idDecoder(*it)["J"]>=89 )
+    //   continue;
     if(std::find(temp.begin(),temp.end(), (*it) )!=temp.end()) continue;
     temp.push_back(*it);
   }
   if(temp.size()<5){
-    streamlog_out( MESSAGE ) << "BAD SHOWER EVENT" << std::endl;
+    streamlog_out( DEBUG ) << "BAD SHOWER EVENT : numElements = " << numElements << std::endl;
     return;
   }
   nshower=1;
@@ -415,7 +423,7 @@ void ShowerProcessor::ShowerAnalysis()
     //find nan problem
     if(shower->getShowerBarycenter()[i]!=shower->getShowerBarycenter()[i]) {
       begin=-5;
-      std::cout << i << " " << shower->getShowerBarycenter()[i]<<"!="<<shower->getShowerBarycenter()[i] << std::endl;
+      streamlog_out( DEBUG ) << i << " " << shower->getShowerBarycenter()[i]<<"!="<<shower->getShowerBarycenter()[i] << std::endl;
       return;
     }
   }
@@ -433,10 +441,10 @@ void ShowerProcessor::ShowerAnalysis()
   nhit3By3=shower->getNhit3By3();
   nhit4By4=shower->getNhit4By4();
   nhit5By5=shower->getNhit5By5();
-  if(DATA) {
-    shower->setCorrectionMap(_correctionMap);
-  }
-  shower->CorrectedNumberOfHits(meanMultiplicity,meanEfficiency);
+  // if(DATA) {
+  //   shower->setCorrectionMap(_correctionMap);
+  // }
+  // shower->CorrectedNumberOfHits(meanMultiplicity,meanEfficiency);
   nhit1Corrected=shower->getCorrectedNumberOfHits()[0];
   nhit2Corrected=shower->getCorrectedNumberOfHits()[1];
   nhit3Corrected=shower->getCorrectedNumberOfHits()[2];
@@ -458,6 +466,7 @@ void ShowerProcessor::ShowerAnalysis()
     hough->Init( MIPClusVec );
     hough->ComputeHoughTransform();
     shower->setTracks( hough->ReturnTracks() );
+    shower->layerProperties(DATA);
     //    shower->LayerProperties();
     TrackLength.reserve(shower->getTracks().size());
     TrackCosTheta.reserve(shower->getTracks().size());
@@ -515,6 +524,10 @@ void ShowerProcessor::ShowerAnalysis()
     radialProfileBis[48+i]=shower->getRadialProfileBis()[48+i];
     clusterLongiProfile[i]=shower->getClusterLongiProfile()[i];
     clusterLongiProfileBis[i]=shower->getClusterLongiProfileBis()[i];
+    if(!NOT_FULL_ANALYSIS){
+    efficiency[i]=shower->getEfficiency()[i];
+    multiplicity[i]=shower->getMultiplicity()[i];
+    }
   }
 }
 
@@ -571,11 +584,11 @@ void ShowerProcessor::processEvent( LCEvent * evt )
       doShower();
     }
     catch(DataNotAvailableException &e){ 
-      std::cout << "Exeption " << std::endl;
+      streamlog_out( ERROR ) << "Exeption " << std::endl;
     }
   }
   _nEvt ++ ;
-  std::cout << "Event processed : " << _nEvt <<std::endl;
+  streamlog_out( MESSAGE ) << "Event processed : " << _nEvt <<std::endl;
 }
 
 
@@ -589,7 +602,7 @@ void ShowerProcessor::end(){
   file->Write();
   file->Close();
   file->Delete();
-  std::cout << "ShowerProcessor::end()  " << name() 
-     	    << " processed " << _nEvt << " events in " << _nRun << " runs "
-     	    << std::endl ;  
+  streamlog_out( MESSAGE ) << "ShowerProcessor::end()  " << name() 
+			   << " processed " << _nEvt << " events in " << _nRun << " runs "
+			   << std::endl ;  
 }

@@ -225,7 +225,7 @@ void MyHoughDisplayProc::resetHisto()
 void MyHoughDisplayProc::drawEventDisplay()
 {
   char mytext[200];
-  sprintf(mytext,"%s%d","event number ",_nEvt+1);
+  sprintf(mytext,"%s%d","event number ",_nEvt);
   hCore_x->SetTitle(mytext);
   hMip_x->SetTitle(mytext);
   hTrack_x->SetTitle(mytext);

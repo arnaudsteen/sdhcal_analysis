@@ -49,7 +49,7 @@ class Shower
   int findAsicKey(EVENT::CalorimeterHit* hit);
   int findAsicKey(Cluster* cluster);
   float TransverseRatio(){return transverseRatio;}
-  void LayerProperties(bool DATA);
+  void layerProperties(bool DATA);
   float RadiusAtShowerMax();
   float ShowerLength();
   std::vector<double> RadialTest();
@@ -91,6 +91,9 @@ class Shower
   inline void setCorrectionMap(std::map<int,double> &map){_correctionMap=map;}
   /* inline void setMultiplicityMap(std::map<int,double> a_map){_mulMap=a_map;} */
   /* inline void setEfficiencyMap(std::map<int,double> a_map){_effMap=a_map;} */
+  inline void setMultiplicityAngleCorrection(float val){_multiCorrectionFactor=val;}
+  inline float* getEfficiency(){return eff;}
+  inline float* getMultiplicity(){return mul;}
 
   float Radius(){return radius;}
  private:
@@ -106,6 +109,7 @@ class Shower
   /* std::map<int,double> _mulMap; */
   /* std::map<int,double> _effMap; */
   std::map<int,double> _correctionMap;
+  float _multiCorrectionFactor;
   int longiProfile[48];//relative to shower starting layer
   float longiProfileBis[48];//relative to calorimeter front
   int radialProfile[96];
@@ -125,6 +129,10 @@ class Shower
   int nhit3By3;
   int nhit4By4;
   int nhit5By5;
+
+  float eff[48];
+  float mul[48];
+  float count[48];
   
 };
 

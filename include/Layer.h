@@ -76,7 +76,7 @@ class LayerInShower : public Layer
   void Init(std::vector<Cluster*> &clVec,std::vector<Cluster*> &clVecShower);
   void Init(Track* aTrack,std::vector<Cluster*> &clVecShower);
   void ComputeShowerLayerProperties();
-  bool CheckIfTrueUnfficientLayer();
+  void CheckIfTrueUnfficientLayer(Track* aTrack);
  private: 
   std::vector<Cluster*> clustersInShower;
 };

@@ -73,8 +73,12 @@ void TrackingAlgo::ComputeTransverseRatio()
   pca->AddRow(rowz);
   pca->CheckConsistency();
   pca->Execute();
-  TMatrixD eigenVec=pca->GetEigenVectors();
+  //TMatrixD eigenVec=pca->GetEigenVectors();
   TVectorD eigenVal=pca->GetEigenValues();
+  // std::cout << "eigenVals  = " << std::endl;
+  // std::cout << eigenVal[2] << "\t" << eigenVal[1] << "\t" << eigenVal[0] << std::endl;
+  // std::cout << "eigenVec  = " << std::endl;
+  // std::cout << eigenVec << std::endl;
   transverseRatio = sqrt(eigenVal[1]*eigenVal[1]+eigenVal[2]*eigenVal[2])/eigenVal[0] ;
   pca->End();
   delete pca;

@@ -204,6 +204,10 @@ int Layer::findAsicKey(Cluster* cluster)
 
 LayerInShower::LayerInShower(int ID) : Layer(ID), clustersInShower(0)
 {
+  edgeXMin=100.0;
+  edgeYMin=100.0;
+  edgeXMax=900.0;
+  edgeYMax=900.0;
 }
 
 LayerInShower::~LayerInShower()
@@ -218,6 +222,7 @@ void LayerInShower::Init(std::vector<Cluster*> &clVec,std::vector<Cluster*> &clV
       clustersInLayer.push_back(*clIt);
     else clusters.push_back(*clIt);
   }
+  
   if(clusters.size()+clustersInLayer.size()!=clVec.size())
     streamlog_out( ERROR ) << "clusters.size()+clustersInLayer.size()!=clVec.size()" << std::endl;
   for(std::vector<Cluster*>::iterator clIt=clVecShower.begin(); clIt!=clVecShower.end(); ++clIt)
@@ -237,21 +242,27 @@ void LayerInShower::Init(Track* aTrack,std::vector<Cluster*> &clVecShower)
   for(std::vector<Cluster*>::iterator clIt=clVecShower.begin(); clIt!=clVecShower.end(); ++clIt)
     if( (*clIt)->getLayerID()==layID )
       clustersInShower.push_back(*clIt);
+
+  // std::vector<Cluster*>::iterator it=clustersInLayer.begin();
+  // if(!clustersInLayer.empty())
+  //   std::cout << "cluster pos : " << (*it)->getClusterPosition().z()  << "\t"
+  // 	      << "layer z pos : " << layerZPosition << std::endl;
+  
 }
 
 void LayerInShower::ComputeShowerLayerProperties()
 {
   float old_dist=0;
   float new_dist=0;
-  if(clusters.size()<5) return;
+  if(clusters.size()<10) return;
   TrackingAlgo* aTrackingAlgo=new TrackingAlgo();
   aTrackingAlgo->Init(clusters);
   aTrackingAlgo->DoTracking();
   if(aTrackingAlgo->TrackFinderSuccess()){
     Track* aTrack=aTrackingAlgo->ReturnTrack();
     if( aTrack->getTrackParameters().size()==0 ) aTrack->ComputeTrackParameters(true);
-    xExpected=aTrack->getTrackParameters()[1]*layID*layerGap+aTrack->getTrackParameters()[0];
-    yExpected=aTrack->getTrackParameters()[3]*layID*layerGap+aTrack->getTrackParameters()[2];
+    xExpected=aTrack->getTrackParameters()[1]*layerZPosition+aTrack->getTrackParameters()[0];
+    yExpected=aTrack->getTrackParameters()[3]*layerZPosition+aTrack->getTrackParameters()[2];
     if(xExpected>edgeXMax||xExpected<edgeXMin||yExpected>edgeYMax||yExpected<edgeYMin){
       this->setLayerTag(fOutsideLayerImpact);
       delete aTrackingAlgo;
@@ -260,9 +271,9 @@ void LayerInShower::ComputeShowerLayerProperties()
     }
     this->setLayerTag(fInsideLayerImpact); 
     if(clustersInLayer.empty()){
-      streamlog_out( DEBUG ) << "find one empty layer = " << layID << std::endl;
-      if( CheckIfTrueUnfficientLayer() )
-	this->setLayerTag(fUnefficientLayer);
+      streamlog_out( DEBUG ) << "no cluster in track found in layer = " << xExpected << " , " << yExpected << " , " << layID << std::endl;
+      layerTag=fUnefficientLayer;
+      CheckIfTrueUnfficientLayer(aTrack);
       delete aTrackingAlgo;
       return;
     }
@@ -288,37 +299,49 @@ void LayerInShower::ComputeShowerLayerProperties()
       }
     }
     delete distHit;
-    if(this->getLayerTag()==fEfficientLayer){
+    if(layerTag==fEfficientLayer){
       this->multiplicity=(*closestIt)->getHits().size();
     }
     else{
-      this->setLayerTag(fUnefficientLayer);
+      layerTag=fUnefficientLayer;
+      CheckIfTrueUnfficientLayer(aTrack);
+      streamlog_out( DEBUG ) << "cluster to far from = " << xExpected << " , " << yExpected << " , " << layID << std::endl;
     }
     chi2=aTrack->getChi2();
   }
   delete aTrackingAlgo;
 }
 
-bool LayerInShower::CheckIfTrueUnfficientLayer()
+void LayerInShower::CheckIfTrueUnfficientLayer(Track* aTrack)
 {
-  if(clustersInShower.empty())
-    return true;  
+  if(clustersInShower.empty()){
+    streamlog_out( DEBUG ) << "layer = " << layID << " is really empty" << std::endl;
+    return;
+  }
   std::vector<Cluster*>::iterator closestIt=clustersInShower.begin();
   for(std::vector<Cluster*>::iterator it=clustersInShower.begin(); it!=clustersInShower.end(); ++it){
-    if( (*it)->getLayerID() != layID ) { streamlog_out( ERROR ) << "Algo Problem 3" << std::endl;
-      return false;
+    if( (*it)->getLayerID() != layID ) { 
+      streamlog_out( ERROR ) << "Algo Problem in LayerInShower::CheckIfTrueUnfficientLayer()" << std::endl;
+      throw;
     }
     if( fabs((*it)->getClusterPosition().x()-xExpected) < fabs((*closestIt)->getClusterPosition().x()-xExpected) &&
 	fabs((*it)->getClusterPosition().y()-yExpected) < fabs((*closestIt)->getClusterPosition().y()-yExpected) ) 
       closestIt=it;
   }
+  DistanceBetweenOneHitAndOneTrack* distHit=new DistanceBetweenOneHitAndOneTrack();
+  distHit->Init(aTrack->getTrackParameters());
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=(*closestIt)->getHits().begin(); it!=(*closestIt)->getHits().end(); ++it){
-    if( sqrt( pow( (*it)->getPosition()[0]-(xExpected),2 ) + 
-	      pow( (*it)->getPosition()[1]-(yExpected),2 ) ) <= 100 ){
-      return false;
+    if( distHit->CalculateDistance(*it) < effDistanceCut ){
+      layerTag=fEfficientLayer;
+      this->multiplicity=(*closestIt)->getHits().size();
+      return;
+    }
+    else if(distHit->CalculateDistance(*it) < 100){
+      layerTag=fUndefinedLayer;
+      streamlog_out( DEBUG ) << "layer " << layID << " is finally not unefficient" << std::endl;
+      return;
     }
   }
-  return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------

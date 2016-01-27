@@ -126,6 +126,7 @@ class ShowerProcessor : public Processor {
   std::map<int,double> _correctionMap;
   float meanEfficiency;
   float meanMultiplicity;
+  float _multiCorrectionFactor;
 
   //  std::vector<Layer*> layVec;
   int numElements;
@@ -200,6 +201,9 @@ class ShowerProcessor : public Processor {
   int nhit3By3;
   int nhit4By4;
   int nhit5By5;
+  
+  float efficiency[48];
+  float multiplicity[48];
 } ;
 
 #endif
