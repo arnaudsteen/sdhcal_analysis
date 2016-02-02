@@ -567,6 +567,17 @@ int Shower::findAsicKey(Cluster* cluster)
   return K*1000+num;
 }
 
+int Shower::findAsicKey(int layer,float x, float y)
+{
+  float I=round( x/10.408 );
+  float J=round( y/10.408 );
+  if(I>96||I<0||J>96||J<0) return -1;
+  int jnum=(J-1)/8;
+  int inum=(I-1)/8;
+  int num=inum*12+jnum;
+  return layer*1000+num;
+}
+
 //float Shower::TransverseRatio()
 //{
 //  transverseRatio=0;
@@ -682,6 +693,10 @@ void Shower::layerProperties(bool DATA=true)
       }
       aLayer->Init( (*track_et_it), clusterShower );
       aLayer->ComputeShowerLayerProperties();
+      
+      int asicKey=findAsicKey(K,aLayer->getxExpected(),aLayer->getyExpected());
+      if( asicKey==3*1000+7*12+5 || (K==41 && asicKey%1000%12>=8 ) ) continue;
+      if(asicKey<0){delete aLayer; continue;}
       
       if( aLayer->getLayerTag()==fUnefficientLayer ){
 	eff[K]=0;

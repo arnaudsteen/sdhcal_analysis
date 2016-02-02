@@ -63,7 +63,7 @@ void Hough::ComputeHoughTransform()
   }
   hgSpaceZX.clear();
   for(std::vector<Track*>::iterator it=tracks.begin(); it!=tracks.end(); ++it){
-    if( (*it)->getClusters().size()<4 ){
+    if( (*it)->getClusters().size()<cutValue ){
       for(std::vector<Cluster*>::iterator jt=(*it)->getClusters().begin(); jt!=(*it)->getClusters().end(); ++jt){
 	(*jt)->setClusterTag(fMip);
       }

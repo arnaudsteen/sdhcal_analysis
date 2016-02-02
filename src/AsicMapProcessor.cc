@@ -309,6 +309,7 @@ void AsicMapProcessor::LayerProperties(std::vector<Cluster*> &clVec)
     aLayer->ComputeLayerProperties();
     
     int asicKey=findAsicKey(K,aLayer->getxExpected(),aLayer->getyExpected());
+    //if( asicKey==3*1000+7*12+5 || (K==41 && asicKey%1000%12>=8 ) ) continue;
     if(asicKey<0){delete aLayer; continue;}
     if(asicMap.find(asicKey)==asicMap.end()){
       Asic* asic=new Asic(asicKey);
@@ -330,7 +331,7 @@ int AsicMapProcessor::findAsicKey(int layer,float x, float y)
   if(I>96||I<0||J>96||J<0) return -1;
   int jnum=(J-1)/8;
   int inum=(I-1)/8;
-  int num=jnum*12+inum;
+  int num=inum*12+jnum;
   return layer*1000+num;
 }
 

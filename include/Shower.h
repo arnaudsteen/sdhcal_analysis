@@ -48,6 +48,7 @@ class Shower
   int findAsicKey(const int layer,const float *par);
   int findAsicKey(EVENT::CalorimeterHit* hit);
   int findAsicKey(Cluster* cluster);
+  int findAsicKey(int layer,float x, float y);
   float TransverseRatio(){return transverseRatio;}
   void layerProperties(bool DATA);
   float RadiusAtShowerMax();
